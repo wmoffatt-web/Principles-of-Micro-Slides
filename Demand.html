@@ -1,0 +1,953 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ink:#16211E; --ink-soft:#44544F; --ink-faint:#7C8C87;
+  --paper:#F2F4F3; --surface:#FFFFFF; --surface-2:#E7EBE9;
+  --rule:#CBD4D1; --rule-soft:#DFE5E3;
+  --crude:#C47418; --crude-soft:#F0DCBE;
+  --brine:#3F7A72; --brine-soft:#D7E6E3;
+  --gain:#2E7D52; --gain-fill:rgba(46,125,82,.16);
+  --loss:#B5432F; --loss-fill:rgba(181,67,47,.16);
+  --stage:#FFFFFF; --shadow:0 1px 2px rgba(22,33,30,.06),0 10px 34px rgba(22,33,30,.10);
+}
+:root:not([data-theme="light"]) { color-scheme: light dark; }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#E7EDEA; --ink-soft:#A6B5B0; --ink-faint:#74857F;
+    --paper:#0E1A17; --surface:#16241F; --surface-2:#1E302A;
+    --rule:#2E443D; --rule-soft:#243730;
+    --crude:#E0A050; --crude-soft:#3B2E18;
+    --brine:#7FB8AF; --brine-soft:#1B312D;
+    --gain:#5FBE8A; --gain-fill:rgba(95,190,138,.18);
+    --loss:#E2836C; --loss-fill:rgba(226,131,108,.18);
+    --stage:#13201C; --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 40px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#E7EDEA; --ink-soft:#A6B5B0; --ink-faint:#74857F;
+  --paper:#0E1A17; --surface:#16241F; --surface-2:#1E302A;
+  --rule:#2E443D; --rule-soft:#243730;
+  --crude:#E0A050; --crude-soft:#3B2E18;
+  --brine:#7FB8AF; --brine-soft:#1B312D;
+  --gain:#5FBE8A; --gain-fill:rgba(95,190,138,.18);
+  --loss:#E2836C; --loss-fill:rgba(226,131,108,.18);
+  --stage:#13201C; --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 40px rgba(0,0,0,.45);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Sans 3",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  margin:0; min-height:100vh; display:flex; flex-direction:column;
+}
+h1,h2,h3{font-family:Spectral,Georgia,"Times New Roman",serif; font-weight:600; text-wrap:balance; margin:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+/* ---------- shell ---------- */
+.shell{flex:1; display:flex; flex-direction:column; min-height:0; padding:14px 16px 0}
+.stagewrap{flex:1; display:flex; align-items:center; justify-content:center; min-height:0}
+.stage{
+  container-type:inline-size;
+  width:100%; max-width:min(1420px, calc((100vh - 118px) * 16 / 9)); aspect-ratio:16/9;
+  background:var(--stage); border:1px solid var(--rule-soft); border-radius:3px;
+  box-shadow:var(--shadow); position:relative; overflow:hidden;
+}
+.slide{position:absolute; inset:0; padding:4.2cqi 5cqi 4.4cqi; display:none; flex-direction:column; gap:2.2cqi}
+.slide.on{display:flex}
+.slide[data-pad="tight"]{padding:3.2cqi 4cqi 3.4cqi; gap:1.6cqi}
+
+/* ---------- slide furniture ---------- */
+.eyebrow{
+  font-size:1.18cqi; letter-spacing:.17em; text-transform:uppercase; font-weight:700;
+  color:var(--crude); display:flex; gap:.9em; align-items:baseline;
+}
+.eyebrow .q{color:var(--ink-faint); letter-spacing:.17em}
+.stitle{font-size:4.1cqi; line-height:1.08; letter-spacing:-.01em}
+.slide[data-pad="tight"] .stitle{font-size:3.3cqi}
+.lede{font-size:2.05cqi; line-height:1.45; color:var(--ink-soft); max-width:46ch}
+.body{display:flex; flex-direction:column; gap:1.1cqi; font-size:1.95cqi; line-height:1.42}
+.body li{margin:0}
+ul.body{list-style:none; padding:0}
+ul.body li{position:relative; padding-left:1.5em}
+ul.body li::before{content:""; position:absolute; left:.2em; top:.62em; width:.5em; height:.5em; background:var(--crude); border-radius:50%}
+ul.body li ul{list-style:none; padding:.5em 0 0 0; display:flex; flex-direction:column; gap:.45em; font-size:.88em; color:var(--ink-soft)}
+ul.body li ul li::before{width:.42em; height:.42em; background:none; border:1px solid var(--brine); top:.55em}
+.content{flex:1; display:flex; gap:3cqi; min-height:0}
+.col{flex:1; display:flex; flex-direction:column; gap:1.6cqi; min-width:0}
+.col.narrow{flex:0 0 32cqi}
+.col.wide{flex:1.5}
+
+/* ---------- definition cards ---------- */
+.defs{display:flex; flex-direction:column; gap:1.3cqi}
+.defgrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.3cqi}
+.def{background:var(--surface-2); border-radius:2px; padding:1.5cqi 1.8cqi; display:flex; flex-direction:column; gap:.5cqi}
+.def dt{font-family:Spectral,Georgia,serif; font-weight:700; font-size:2cqi; color:var(--ink)}
+.def dd{margin:0; font-size:1.72cqi; line-height:1.38; color:var(--ink-soft)}
+.def .eq{font-family:"IBM Plex Mono",monospace; font-size:1.6cqi; color:var(--crude); font-weight:500; letter-spacing:.02em}
+
+.formula{margin:0; font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:2.9cqi; font-weight:500;
+  color:var(--ink); display:flex; align-items:baseline; gap:.75em; flex-wrap:wrap; font-variant-numeric:tabular-nums}
+.formula b{color:var(--crude); font-weight:600; font-size:1.18em; line-height:1}
+.formula small{font-family:"Source Sans 3",sans-serif; font-size:1.3cqi; letter-spacing:.14em;
+  text-transform:uppercase; font-weight:700; color:var(--ink-faint)}
+
+/* ---------- numbered question cards ---------- */
+.qcards{display:grid; grid-template-columns:repeat(3,1fr); gap:2cqi; flex:1; align-content:center}
+.qcard{display:flex; flex-direction:column; gap:1cqi; padding-top:1.4cqi; border-top:2px solid var(--crude)}
+.qcard .n{font-family:"IBM Plex Mono",monospace; font-size:1.3cqi; color:var(--crude); font-weight:600; letter-spacing:.14em}
+.qcard h3{font-size:2.5cqi; line-height:1.15}
+.qcard p{margin:0; font-size:1.72cqi; line-height:1.4; color:var(--ink-soft)}
+
+/* ---------- controls ---------- */
+.panel{background:var(--surface-2); border-radius:2px; padding:1.6cqi 1.8cqi; display:flex; flex-direction:column; gap:1.2cqi}
+.ctrl{display:flex; flex-direction:column; gap:.55cqi}
+.ctrl label{font-size:1.2cqi; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--ink-faint)}
+.ctrl .val{font-family:"IBM Plex Mono",monospace; font-size:2.6cqi; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums}
+input[type=range]{
+  -webkit-appearance:none; appearance:none; width:100%; height:1.5cqi; background:transparent; cursor:pointer; margin:0;
+}
+input[type=range]::-webkit-slider-runnable-track{height:.45cqi; background:var(--rule); border-radius:1px}
+input[type=range]::-moz-range-track{height:.45cqi; background:var(--rule); border-radius:1px}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:1.9cqi; height:1.9cqi; border-radius:50%; background:var(--crude);
+  border:.35cqi solid var(--stage); box-shadow:0 0 0 1px var(--crude); margin-top:-.75cqi;
+}
+input[type=range]::-moz-range-thumb{
+  width:1.9cqi; height:1.9cqi; border-radius:50%; background:var(--crude); border:.35cqi solid var(--stage); box-shadow:0 0 0 1px var(--crude);
+}
+input[type=range]:focus-visible{outline:2px solid var(--brine); outline-offset:4px}
+.readout{display:grid; grid-template-columns:auto 1fr; gap:.45cqi 1.2cqi; font-size:1.75cqi; align-items:baseline}
+.readout dt{color:var(--ink-faint); font-size:1.5cqi; letter-spacing:.06em}
+.readout dd{margin:0; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-weight:500}
+.verdict{font-size:1.85cqi; line-height:1.36; padding:1.1cqi 1.3cqi; border-radius:2px; background:var(--surface); color:var(--ink)}
+.verdict strong{font-family:Spectral,Georgia,serif}
+.verdict[data-tone="gain"]{box-shadow:inset 0 0 0 1px var(--gain); color:var(--ink)}
+.verdict[data-tone="loss"]{box-shadow:inset 0 0 0 1px var(--loss)}
+.verdict[data-tone="flat"]{box-shadow:inset 0 0 0 1px var(--crude)}
+.btnrow{display:flex; gap:.8cqi; flex-wrap:wrap}
+button.b{
+  font-family:"Source Sans 3",sans-serif; font-size:1.45cqi; font-weight:600; letter-spacing:.02em;
+  padding:.7cqi 1.3cqi; border-radius:2px; border:1px solid var(--rule); background:var(--surface);
+  color:var(--ink); cursor:pointer;
+}
+button.b:hover{border-color:var(--crude); color:var(--crude)}
+button.b[aria-pressed="true"]{background:var(--crude); border-color:var(--crude); color:#fff}
+:root[data-theme="dark"] button.b[aria-pressed="true"], :root:not([data-theme="light"]) button.b[aria-pressed="true"]{color:#14221D}
+button.b:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+
+/* ---------- figure ---------- */
+.fig{flex:1; display:flex; flex-direction:column; gap:.7cqi; min-height:0}
+.fig svg{width:100%; height:100%; display:block; flex:1; min-height:0; overflow:visible}
+.figcap{font-size:1.35cqi; color:var(--ink-faint); line-height:1.35}
+.legend{display:flex; gap:1.6cqi; flex-wrap:wrap; font-size:1.4cqi; color:var(--ink-soft)}
+.legend span{display:flex; align-items:center; gap:.5em}
+.swatch{width:1.5em; height:.28em; border-radius:1px; display:inline-block}
+.swatch-hatch{height:.85em; border:1px solid var(--loss);
+  background:repeating-linear-gradient(45deg,var(--loss) 0 1px,transparent 1px 4px),var(--loss-fill)}
+.figpair{display:flex; gap:2cqi; flex:1; min-height:0}
+.figpair>svg{flex:1 1 0; width:auto; min-width:0}
+.col.narrow .panel{padding:1.3cqi 1.4cqi; gap:1cqi}
+.col.narrow .ctrl .val{font-size:2.3cqi}
+.col.narrow .readout{font-size:1.58cqi; gap:.32cqi 1cqi}
+.col.narrow .readout dt{font-size:1.32cqi}
+.col.narrow .verdict{font-size:1.6cqi; padding:.9cqi 1.1cqi; line-height:1.33}
+.slide[data-figs="pair"] .content{gap:2.2cqi}
+.slide[data-figs="pair"] .col.narrow{flex:0 0 25cqi}
+.slide[data-figs="pair"] .panel{padding:1.1cqi 1.2cqi; gap:.9cqi}
+.slide[data-figs="pair"] .ctrl .val{font-size:2.1cqi}
+.slide[data-figs="pair"] .ctrl label{font-size:1.05cqi}
+.slide[data-figs="pair"] .readout{font-size:1.5cqi; gap:.3cqi .8cqi}
+.slide[data-figs="pair"] .readout dt{font-size:1.28cqi}
+.slide[data-figs="pair"] .verdict{font-size:1.5cqi; padding:.85cqi 1cqi}
+.slide[data-figs="pair"] ul.body{font-size:1.62cqi; gap:.85cqi}
+.slide[data-figs="pair"] .def{padding:1.1cqi 1.2cqi}
+.slide[data-figs="pair"] .def dt{font-size:1.72cqi}
+.slide[data-figs="pair"] .def dd{font-size:1.46cqi}
+.slide[data-figs="pair"] button.b{font-size:1.25cqi; padding:.6cqi 1cqi}
+.slide[data-figs="pair"] .figcap{font-size:1.24cqi}
+
+/* ---------- data table ---------- */
+.tbl{width:100%; border-collapse:collapse; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:1.42cqi}
+.tbl th{
+  font-family:"Source Sans 3",sans-serif; font-size:1.18cqi; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-faint); font-weight:700; text-align:right; padding:.55cqi .6cqi; border-bottom:1px solid var(--rule);
+}
+.tbl th:first-child, .tbl td:first-child{text-align:left}
+.tbl td{padding:.5cqi .6cqi; border-bottom:1px solid var(--rule-soft); text-align:right; color:var(--ink-soft)}
+.tbl tr.hi td{background:var(--crude-soft); color:var(--ink); font-weight:600}
+.tbl tr.peak td:first-child::after{content:" \25C0"; color:var(--crude); font-size:.8em}
+.tbl input{
+  width:100%; font:inherit; text-align:right; background:var(--surface); color:var(--ink);
+  border:1px solid var(--rule); border-radius:2px; padding:.25cqi .4cqi;
+}
+.tbl input:focus-visible{outline:2px solid var(--brine); outline-offset:1px}
+.tbl input[data-state="ok"]{border-color:var(--gain); background:var(--gain-fill); color:var(--ink)}
+.tbl input[data-state="no"]{border-color:var(--loss); background:var(--loss-fill); color:var(--ink)}
+.given td{color:var(--ink)}
+
+/* ---------- market-structure spectrum ---------- */
+.spectrum{display:flex; flex-direction:column; gap:1cqi; flex:1; min-height:0}
+.spec-ends{display:flex; justify-content:space-between; font-size:1.12cqi; letter-spacing:.16em;
+  text-transform:uppercase; font-weight:700}
+.spec-ends .l{color:var(--brine)}
+.spec-ends .r{color:var(--loss)}
+.spec-axis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.6cqi;
+  position:relative; height:2.4cqi; align-items:center}
+.spec-axis::before{content:""; position:absolute; left:0; right:0; top:50%; height:.32cqi;
+  transform:translateY(-50%); border-radius:2px;
+  background:linear-gradient(90deg,var(--brine) 0%,var(--brine) 12%,var(--crude) 58%,var(--loss) 95%)}
+.spec-axis i{justify-self:center; position:relative; width:1.25cqi; height:1.25cqi; border-radius:50%;
+  background:var(--stage); border:.32cqi solid var(--ink-faint)}
+.spec-axis i[data-on]{border-color:var(--crude); box-shadow:0 0 0 .4cqi var(--crude-soft)}
+.spec-cols{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.6cqi; flex:1; min-height:0}
+.spec{display:flex; flex-direction:column; gap:.75cqi; min-width:0}
+.spec h3{font-size:1.95cqi; line-height:1.12; min-height:4.4cqi}
+.spec[data-here] h3{color:var(--crude)}
+.spec .tag{font-family:"IBM Plex Mono",monospace; font-size:1.05cqi; letter-spacing:.12em;
+  font-weight:600; color:var(--crude)}
+.spec svg{width:100%; height:8.6cqi; display:block}
+.spec dl{display:grid; grid-template-columns:auto 1fr; gap:.3cqi .8cqi; margin:0; font-size:1.4cqi; align-items:baseline}
+.spec dt{color:var(--ink-faint); font-size:1.18cqi; letter-spacing:.07em; text-transform:uppercase; font-weight:700}
+.spec dd{margin:0; color:var(--ink-soft); line-height:1.3}
+.spec[data-here] dd{color:var(--ink)}
+
+/* ---------- source table ---------- */
+.srctbl{width:100%; border-collapse:collapse; font-size:1.62cqi}
+.srctbl th{font-size:1.15cqi; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint);
+  font-weight:700; text-align:left; padding:.6cqi .8cqi; border-bottom:1px solid var(--rule)}
+.srctbl td{padding:.62cqi .8cqi; border-bottom:1px solid var(--rule-soft); vertical-align:baseline}
+.srctbl td:first-child{font-weight:600; color:var(--ink); white-space:nowrap}
+.srctbl td:last-child{color:var(--ink-soft)}
+.srctbl tr:last-child td{border-bottom:none}
+
+/* ---------- key-term list ---------- */
+.terms{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.9cqi 2.4cqi; flex:1; align-content:start}
+.term{display:flex; flex-direction:column; gap:.2cqi; padding-bottom:.8cqi; border-bottom:1px solid var(--rule-soft)}
+.term b{font-family:Spectral,Georgia,serif; font-size:1.72cqi; color:var(--ink)}
+.term span{font-size:1.48cqi; line-height:1.34; color:var(--ink-soft)}
+
+/* ---------- big stat ---------- */
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:2.4cqi}
+.stat{display:flex; flex-direction:column; gap:.3cqi}
+.stat b{font-family:"IBM Plex Mono",monospace; font-size:4.6cqi; font-weight:600; color:var(--crude); line-height:1}
+.stat span{font-size:1.52cqi; line-height:1.34; color:var(--ink-soft)}
+
+/* ---------- takeaways ---------- */
+.takes{display:flex; flex-direction:column; gap:1.5cqi; flex:1; justify-content:center}
+.take{display:grid; grid-template-columns:14cqi 1fr; gap:2cqi; align-items:baseline; padding-bottom:1.5cqi; border-bottom:1px solid var(--rule-soft)}
+.take:last-child{border-bottom:none; padding-bottom:0}
+.take h3{font-size:2.1cqi; color:var(--crude); line-height:1.15}
+.take p{margin:0; font-size:1.9cqi; line-height:1.42; color:var(--ink-soft)}
+.take p em{color:var(--ink); font-style:normal; font-weight:600}
+
+/* ---------- title slide ---------- */
+.titleslide{justify-content:center; gap:0}
+.titleslide .kicker{font-size:1.4cqi; letter-spacing:.24em; text-transform:uppercase; color:var(--ink-faint); font-weight:700}
+.titleslide h1{font-size:6.4cqi; line-height:1.03; letter-spacing:-.02em; margin:2.2cqi 0 1.6cqi; max-width:20ch}
+.titleslide .sub{font-size:2.1cqi; color:var(--ink-soft); max-width:52ch; line-height:1.45}
+.titleslide .meta{margin-top:3.4cqi; font-size:1.45cqi; color:var(--ink-faint); display:flex; gap:1.2em; flex-wrap:wrap}
+.titleslide .meta b{color:var(--crude); font-weight:600}
+.derrick{position:absolute; right:4cqi; bottom:0; width:34cqi; height:76cqi; opacity:.9; pointer-events:none}
+
+/* ---------- section divider ---------- */
+.divider{justify-content:center; background:var(--ink); color:var(--paper)}
+.divider .num{font-family:"IBM Plex Mono",monospace; font-size:1.4cqi; letter-spacing:.2em; color:var(--crude); font-weight:600}
+.divider h2{font-size:5.2cqi; line-height:1.06; margin:1.6cqi 0 1.4cqi; max-width:22ch; color:var(--paper)}
+.divider p{margin:0; font-size:2cqi; line-height:1.45; color:#A6B5B0; max-width:48ch}
+
+/* ---------- nav ---------- */
+.nav{
+  display:flex; align-items:center; gap:14px; padding:10px 4px 12px; max-width:1420px;
+  margin:0 auto; width:100%; font-size:13px; color:var(--ink-faint);
+}
+.rail{flex:1; display:flex; gap:3px; align-items:stretch; height:16px}
+.rail button{
+  flex:1; border:none; padding:0; background:transparent; cursor:pointer; position:relative; min-width:0;
+}
+.rail button::after{content:""; position:absolute; left:0; right:0; top:7px; height:2px; background:var(--rule); transition:background .15s, height .15s, top .15s}
+.rail button[aria-current="true"]::after{background:var(--crude); height:4px; top:6px}
+.rail button:hover::after{background:var(--brine)}
+.rail button:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.counter{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; letter-spacing:.04em; white-space:nowrap}
+.navbtn{
+  border:1px solid var(--rule); background:var(--surface); color:var(--ink); border-radius:2px;
+  width:30px; height:30px; cursor:pointer; font-size:15px; line-height:1; display:grid; place-items:center;
+}
+.navbtn:hover{border-color:var(--crude); color:var(--crude)}
+.navbtn:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.hint{white-space:nowrap}
+@media (max-width:760px){ .hint{display:none} }
+
+@media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important} }
+
+@media print{
+  @page{size:13.333in 7.5in; margin:0}
+  *{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important}
+  body{background:#fff; display:block}
+  .nav{display:none}
+  .shell{padding:0; display:block}
+  .stagewrap{display:block}
+  .stage{width:100%; max-width:none; max-height:none; height:auto; aspect-ratio:auto;
+    box-shadow:none; border:none; border-radius:0; overflow:visible; background:#fff}
+  .slide{display:flex !important; position:relative; inset:auto; width:100%; aspect-ratio:16/9;
+    overflow:hidden; background:var(--stage); break-after:page; page-break-after:always}
+  .slide:last-child{break-after:auto; page-break-after:auto}
+}
+</style>
+<style>
+.slide .tbl{font-size:1.6cqi}
+.slide .tbl th{font-size:1.2cqi}
+.slide .tbl td{padding:.7cqi .7cqi}
+.def .eq{display:block; margin-top:.4cqi}
+.titleslide .derrick{width:22cqi; height:50cqi; right:5cqi; bottom:6cqi; opacity:.85}
+.titleslide .sub{max-width:40ch}
+.qcards.qgrid4{grid-template-columns:repeat(2,1fr); gap:2.2cqi 3cqi}
+.qgrid4 .qcard h3{font-size:2.1cqi}
+select.sel{font-family:"Source Sans 3",sans-serif; font-size:1.5cqi; padding:.6cqi .8cqi; border:1px solid var(--rule);
+  border-radius:2px; background:var(--surface); color:var(--ink); width:100%}
+select.sel:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.col.narrow .readout dd{white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="stagewrap">
+    <div class="stage" id="stage">
+
+<section class="slide titleslide on" data-label="Title">
+  <span class="kicker">Principles of Microeconomics &#183; Chapter 3</span>
+  <h1>Demand</h1>
+  <p class="sub">What demand is, why the demand curve slopes down, consumer surplus, and what shifts demand.</p>
+  <div class="meta"><span><b>Running example:</b> the world demand for oil</span><span><b>Drag</b> the sliders on the live diagrams</span></div>
+  <svg class="derrick" viewBox="0 0 160 360" aria-hidden="true">
+    <path d="M20 340 L20 110 M20 340 L150 340" fill="none" stroke="var(--rule)" stroke-width="1.8"/>
+    <path d="M20 130 L92 250 L20 250 Z" fill="var(--brine-soft)"/>
+    <path d="M20 250 L92 250 M92 250 L92 340" fill="none" stroke="var(--crude)" stroke-width="1.4" stroke-dasharray="4 4"/>
+    <path d="M20 130 L146 340" fill="none" stroke="var(--brine)" stroke-width="2.6" stroke-linecap="round"/>
+    <circle cx="92" cy="250" r="5" fill="var(--crude)"/>
+  </svg>
+</section>
+
+<section class="slide" data-label="The hook">
+  <div class="eyebrow"><span>Demand</span><span class="q">The hook</span></div>
+  <h2 class="stitle">When the price of oil falls, people buy more of it</h2>
+  <div class="stats">
+    <div class="stat"><b>$55 &rarr; 5</b><span>At $55 a barrel, buyers want 5 million barrels a day.</span></div>
+    <div class="stat"><b>$20 &rarr; 25</b><span>At $20, quantity demanded rises to 25 million barrels a day.</span></div>
+    <div class="stat"><b>$5 &rarr; 50</b><span>At $5, quantity demanded rises to 50 million barrels a day.</span></div>
+  </div>
+  <p class="lede">As the price falls from $55 to $5, the quantity of oil demanded rises from 5 to 50 million barrels a day. This chapter covers why buyers respond to price, what they gain when they buy, and what else can change demand.</p>
+</section>
+
+<section class="slide divider" data-label="Part I">
+  <span class="num">PART ONE</span>
+  <h2>What is demand?</h2>
+  <p>Demand describes how much buyers want at every possible price.</p>
+</section>
+
+<section class="slide" data-label="Definitions">
+  <div class="eyebrow"><span>Demand</span><span class="q">Definitions</span></div>
+  <h2 class="stitle">Demand vs. quantity demanded</h2>
+  <div class="content">
+    <div class="col">
+      <div class="defs">
+        <div class="def"><dt>Demand curve</dt><dd>A function that shows the quantity demanded at different prices.</dd></div>
+        <div class="def"><dt>Quantity demanded</dt><dd>The quantity that buyers are willing and able to buy at a particular price.</dd></div>
+      </div>
+    </div>
+    <div class="col">
+      <span class="figcap"><strong>Don&rsquo;t mix these up</strong></span>
+      <ul class="body">
+        <li><strong>Quantity demanded</strong> is a single number at a single price. Ole Miss football: &ldquo;How many tickets sell at $400?&rdquo;</li>
+        <li><strong>Demand</strong> is the relationship across <em>all</em> prices and quantities &mdash; the whole curve.</li>
+        <li>A change in the good&rsquo;s own price moves you <strong>along</strong> the curve. A shifter moves the <strong>whole</strong> curve.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part II">
+  <span class="num">PART TWO</span>
+  <h2>Marginal benefit and diminishing value</h2>
+  <p>Why the demand curve slopes down.</p>
+</section>
+
+<section class="slide" data-label="Marginal benefit">
+  <div class="eyebrow"><span>Marginal benefit</span><span class="q">Diminishing value</span></div>
+  <h2 class="stitle">Each extra unit is worth less than the last</h2>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Marginal benefit (marginal value)</dt><dd>The additional benefit a person gets from one more unit of a good.</dd></div>
+      <table class="tbl">
+        <thead><tr><th>Donut</th><th>1st</th><th>2nd</th><th>3rd</th><th>4th</th><th>5th</th></tr></thead>
+        <tbody><tr class="given"><td>How it feels</td><td>Great</td><td>Good</td><td>OK</td><td>Meh</td><td>Gross</td></tr></tbody>
+      </table>
+    </div>
+    <div class="col">
+      <ul class="body">
+        <li>Marginal benefit <strong>falls</strong> as you consume more.</li>
+        <li>Because each additional unit delivers less benefit, people will only buy more when the <strong>price drops</strong>.</li>
+        <li>That is the reason the demand curve slopes down.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: donuts">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag the price</span></div>
+  <h2 class="stitle">Buy another donut only if it is worth the price</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-mb" role="img" aria-label="Bars showing the falling marginal benefit of each of five donuts, with a horizontal price line; donuts whose bar reaches the price are bought."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--gain)"></i>Bought: worth at least the price</span><span><i class="swatch" style="background:var(--rule)"></i>Not bought</span><span><i class="swatch" style="background:var(--crude)"></i>Price</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-mb">Price of a donut</label>
+          <span class="val" id="s-mb-val">$2.50</span>
+          <input type="range" id="s-mb" min="0.25" max="5.5" step="0.25" value="2.5" aria-label="Price of a donut">
+        </div>
+        <dl class="readout">
+          <dt>Donuts bought</dt><dd id="r-mbq">&mdash;</dd>
+          <dt>Last donut worth</dt><dd id="r-mblast">&mdash;</dd>
+          <dt>Next donut worth</dt><dd id="r-mbnext">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-mb" data-tone="flat">&mdash;</div>
+      <p class="figcap">Dollar values are illustrative. Lower the price step by step and you trace out a demand curve.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part III">
+  <span class="num">PART THREE</span>
+  <h2>The demand curve and the law of demand</h2>
+  <p>The chapter&rsquo;s running example: the world demand for oil, in millions of barrels a day.</p>
+</section>
+
+<section class="slide" data-label="Reading the curve">
+  <div class="eyebrow"><span>The demand curve</span><span class="q">Two ways to read it</span></div>
+  <h2 class="stitle">Two ways to read a demand curve</h2>
+  <div class="content">
+    <div class="col narrow">
+      <table class="tbl">
+        <thead><tr><th>Price</th><th>Quantity demanded</th></tr></thead>
+        <tbody>
+          <tr class="given"><td>$55</td><td>5</td></tr>
+          <tr class="hi"><td>$20</td><td>25</td></tr>
+          <tr class="given"><td>$5</td><td>50</td></tr>
+        </tbody>
+      </table>
+      <p class="figcap">Millions of barrels per day. Figure 3-1 plots this schedule.</p>
+    </div>
+    <div class="col">
+      <div class="defs">
+        <div class="def"><dt>Horizontally</dt><dd>At a given price, how much will people buy? At $20 a barrel, buyers want <strong>25 million barrels a day</strong>.</dd></div>
+        <div class="def"><dt>Vertically</dt><dd>For a given quantity, what is the most people will pay? The maximum price to sell 25 million barrels a day is <strong>$20</strong>.</dd></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: demand for oil">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag the price</span></div>
+  <h2 class="stitle">The demand for oil</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-oil" role="img" aria-label="A downward-sloping demand curve for oil through $55 and 5 million barrels, $20 and 25 million, and $5 and 50 million, with the chosen price and quantity marked."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--ink-soft)"></i>Demand</span><span><i class="swatch" style="background:var(--crude)"></i>Price and quantity demanded</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-oil">Price per barrel</label>
+          <span class="val" id="s-oil-val">$20</span>
+          <input type="range" id="s-oil" min="2" max="70" step="1" value="20" aria-label="Price per barrel of oil">
+        </div>
+        <dl class="readout">
+          <dt>Quantity demanded</dt><dd id="r-oilq">&mdash;</dd>
+          <dt>Who is buying</dt><dd id="r-oilwho">&mdash;</dd>
+        </dl>
+        <div class="btnrow"><button class="b" data-oil="55">$55</button><button class="b" data-oil="20">$20</button><button class="b" data-oil="5">$5</button></div>
+      </div>
+      <div class="verdict" id="v-oil" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Law of demand">
+  <div class="eyebrow"><span>The law of demand</span><span class="q">Why it slopes down</span></div>
+  <h2 class="stitle">Oil has uses of very different value</h2>
+  <div class="def"><dt>Law of demand</dt><dd>The demand curve is negatively sloped: when the price rises, quantity demanded falls; when the price falls, quantity demanded rises.</dd></div>
+  <div class="qcards">
+    <div class="qcard"><span class="n">BUYER 1</span><h3>The President</h3><p>Air Force One flies at any price. This buyer barely responds to the price of oil at all.</p></div>
+    <div class="qcard"><span class="n">BUYER 2</span><h3>Delta Airlines</h3><p>There is no substitute for jet fuel, so the airline keeps buying even when the price climbs.</p></div>
+    <div class="qcard"><span class="n">BUYER 3</span><h3>Frank, a retiree</h3><p>He can take the bus or stay home. Very price-sensitive: he is the first to cut back.</p></div>
+  </div>
+  <p class="figcap">When the price is high, only the highest-value uses buy oil. As it falls, lower-value uses &mdash; heating, plastic and rubber &mdash; switch back to oil, and quantity demanded rises.</p>
+</section>
+
+<section class="slide divider" data-label="Part IV">
+  <span class="num">PART FOUR</span>
+  <h2>Consumer surplus</h2>
+  <p>The difference between what buyers are willing to pay and what they actually pay.</p>
+</section>
+
+<section class="slide" data-label="Consumer surplus">
+  <div class="eyebrow"><span>Consumer surplus</span><span class="q">The buyer&rsquo;s gain</span></div>
+  <h2 class="stitle">Willingness to pay minus price</h2>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Consumer surplus (CS)</dt><dd>The consumer&rsquo;s gain from exchange &mdash; the difference between the maximum a buyer is willing to pay and the market price. Total CS is the area beneath the demand curve and above the price.</dd></div>
+      <p class="formula"><b>CS</b> = &frac12; &times; height &times; base</p>
+    </div>
+    <div class="col">
+      <span class="figcap"><strong>Worked example</strong> &mdash; max willingness to pay $30</span>
+      <ul class="body">
+        <li><strong>Height</strong> = max willingness to pay &minus; market price. <strong>Base</strong> = quantity demanded.</li>
+        <li>If <span class="mono">P = $10</span>: CS = &frac12; &times; (30 &minus; 10) &times; 70 = <strong>$700</strong>.</li>
+        <li>A lower price gives buyers a <strong>bigger</strong> surplus: a taller and wider triangle.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: consumer surplus">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag the price</span></div>
+  <h2 class="stitle">Watch the triangle grow as the price falls</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-cs" role="img" aria-label="A straight demand curve from a max willingness to pay of $30 down to 105 units; the consumer surplus triangle lies below demand and above the chosen price."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--ink-soft)"></i>Demand</span><span><i class="swatch" style="background:var(--brine)"></i>Consumer surplus</span><span><i class="swatch" style="background:var(--crude)"></i>Market price</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-cs">Market price</label>
+          <span class="val" id="s-cs-val">$10</span>
+          <input type="range" id="s-cs" min="0" max="30" step="1" value="10" aria-label="Market price">
+        </div>
+        <dl class="readout">
+          <dt>Quantity demanded</dt><dd id="r-csq">&mdash;</dd>
+          <dt>Height (30 &minus; P)</dt><dd id="r-csh">&mdash;</dd>
+          <dt>Consumer surplus</dt><dd id="r-cs">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-cs" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part V">
+  <span class="num">PART FIVE</span>
+  <h2>Shifting demand vs. moving along it</h2>
+  <p>A change in the good&rsquo;s own price moves you along the curve. Other changes shift the curve.</p>
+</section>
+
+<section class="slide" data-label="Shift vs movement">
+  <div class="eyebrow"><span>Shifts</span><span class="q">Two different changes</span></div>
+  <h2 class="stitle">Change in quantity demanded vs. change in demand</h2>
+  <div class="content">
+    <div class="col">
+      <div class="qcard"><span class="n">MOVEMENT ALONG THE CURVE</span><h3>Change in quantity demanded</h3><p>Caused <em>only</em> by a change in the good&rsquo;s own price. You slide to a different point on the same curve.</p></div>
+      <div class="qcard"><span class="n">SHIFT OF THE WHOLE CURVE</span><h3>Change in demand</h3><p>Caused by a shifter &mdash; income, population and so on &mdash; while the good&rsquo;s own price is held constant. An increase shifts the curve <strong>right</strong>; a decrease shifts it <strong>left</strong>.</p></div>
+    </div>
+    <div class="col narrow">
+      <div class="def"><dt>Ceteris paribus</dt><dd>&ldquo;All else equal.&rdquo; A demand curve is drawn holding everything except the good&rsquo;s own price constant. A shifter is what happens when one of those other things changes.</dd></div>
+      <p class="figcap">After an increase in demand, people buy more at every price and will pay more for every quantity.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part VI">
+  <span class="num">PART SIX</span>
+  <h2>What shifts demand?</h2>
+  <p>Six shifters: income, population, price of substitutes, price of complements, expectations and tastes.</p>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Income">
+  <div class="eyebrow"><span>Shifter 1</span><span class="q">Income</span></div>
+  <h2 class="stitle">Normal goods and inferior goods</h2>
+  <div class="content">
+    <div class="col">
+      <table class="tbl">
+        <thead><tr><th>Type</th><th>Income rises</th><th>Income falls</th></tr></thead>
+        <tbody>
+          <tr class="given"><td>Normal good</td><td>Demand rises (right)</td><td>Demand falls (left)</td></tr>
+          <tr class="given"><td>Inferior good</td><td>Demand falls (left)</td><td>Demand rises (right)</td></tr>
+        </tbody>
+      </table>
+      <ul class="body" style="font-size:1.75cqi">
+        <li>Most goods are <strong>normal</strong>.</li>
+        <li><strong>Inferior</strong> examples: Great Value instead of the name brand; domestic instead of craft beer.</li>
+      </ul>
+    </div>
+    <div class="col narrow">
+      <div class="def"><dt>Are children a normal good?</dt><dd>Black et al. (2013): when oil prices rise, coal prices rise too, so coal miners&rsquo; incomes rise. That lets researchers test how family size responds to income. Caveat: how income is distributed matters.</dd></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Population and substitutes">
+  <div class="eyebrow"><span>Shifters 2 &amp; 3</span><span class="q">Population, price of substitutes</span></div>
+  <h2 class="stitle">Population and the price of substitutes</h2>
+  <div class="content">
+    <div class="col">
+      <div class="qcard"><span class="n">POPULATION</span><h3>A home-game weekend</h3><p>More people generally means more demand, and a shift in sub-populations changes demand for specific goods. A home game against LSU floods town with people: at $20, the quantity of local coffee demanded jumps from 500 to 2,000.</p></div>
+    </div>
+    <div class="col">
+      <div class="def"><dt>Substitute</dt><dd>A good that can be consumed instead of another. A <strong>fall</strong> in a substitute&rsquo;s price <strong>decreases</strong> demand for the good; a rise increases it.</dd></div>
+      <ul class="body" style="font-size:1.7cqi">
+        <li>Coke and Pepsi; Funky&rsquo;s and the Library; any two sources of caffeine.</li>
+        <li>Price of orange juice rises &rarr; demand for apple juice <strong>increases</strong>.</li>
+        <li>Price of natural gas falls &rarr; demand for oil <strong>decreases</strong>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Complements and expectations">
+  <div class="eyebrow"><span>Shifters 4 &amp; 5</span><span class="q">Price of complements, expectations</span></div>
+  <h2 class="stitle">Price of complements and expectations</h2>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Complement</dt><dd>Goods that go well together. A <strong>drop</strong> in a complement&rsquo;s price <strong>increases</strong> demand for the good.</dd></div>
+      <ul class="body" style="font-size:1.7cqi">
+        <li>Price of iPhones rises &rarr; demand for iPhone apps <strong>falls</strong>.</li>
+        <li>Price of sugar falls &rarr; demand for tea <strong>rises</strong>.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="def"><dt>Expectations</dt><dd>Expecting a future supply reduction &mdash; and so higher future prices &mdash; increases demand <strong>today</strong>.</dd></div>
+      <ul class="body" style="font-size:1.7cqi">
+        <li>Stocks and the efficient-market hypothesis: prices already reflect expectations.</li>
+        <li>Weather: an expected cold snap raises demand for heaters now. Expectations also drive seasonality.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Tastes">
+  <div class="eyebrow"><span>Shifter 6</span><span class="q">Tastes</span></div>
+  <h2 class="stitle">Tastes</h2>
+  <div class="content">
+    <div class="col">
+      <ul class="body">
+        <li>Fads, fashions and advertising all shift demand.</li>
+        <li>Classic natural experiment: Catholic abstinence from meat during Lent <strong>raises</strong> demand for fish and <strong>lowers</strong> demand for beef.</li>
+      </ul>
+    </div>
+    <div class="col narrow">
+      <div class="def"><dt>Vatican II</dt><dd>When the year-round Friday fish rule was relaxed (1966), the demand for fish fell &mdash; documented in Ault et al. (1987). A change in tastes, with no change in the price of fish.</dd></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: what shifts demand?">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Pick an event</span></div>
+  <h2 class="stitle">Shift, or movement along the curve?</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-shift" role="img" aria-label="The original demand curve and, for the chosen event, either a shifted demand curve or a movement along the original curve."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--ink-faint)"></i>Original demand D</span><span><i class="swatch" style="background:var(--crude)"></i>New demand D&prime; or new point</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-ev">Event</label>
+          <select id="s-ev" class="sel" aria-label="Event that may shift demand"></select>
+        </div>
+        <dl class="readout">
+          <dt>Shifter</dt><dd id="r-evk">&mdash;</dd>
+          <dt>Result</dt><dd id="r-evr">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-ev" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Self-check">
+  <div class="eyebrow"><span>Quiz self-check</span><span class="q">Be able to answer</span></div>
+  <h2 class="stitle">Four questions to answer without notes</h2>
+  <div class="qcards qgrid4">
+    <div class="qcard"><span class="n">QUESTION 1</span><h3>Max willingness to pay $30, P = $10, Q = 70. Consumer surplus?</h3><p>&frac12; &times; (30 &minus; 10) &times; 70 = <strong>$700</strong>.</p></div>
+    <div class="qcard"><span class="n">QUESTION 2</span><h3>iPads are a normal good. Incomes rise. What happens?</h3><p>Demand for iPads <strong>shifts right</strong>.</p></div>
+    <div class="qcard"><span class="n">QUESTION 3</span><h3>The price of orange juice rises. Demand for apple juice?</h3><p>They are substitutes, so demand for apple juice <strong>increases</strong>.</p></div>
+    <div class="qcard"><span class="n">QUESTION 4</span><h3>The price of oil falls. Change in demand, or in quantity demanded?</h3><p>Its own price changed: a <strong>movement along</strong> the curve, a change in quantity demanded.</p></div>
+  </div>
+</section>
+
+<section class="slide" data-label="Takeaway">
+  <div class="eyebrow"><span>Takeaway</span></div>
+  <h2 class="stitle">What to carry out of Chapter 3</h2>
+  <div class="takes">
+    <div class="take"><h3>The law</h3><p>A demand curve shows how buyers respond to price: higher price, <em>less bought</em>; lower price, <em>more bought</em>.</p></div>
+    <div class="take"><h3>The reason</h3><p>It slopes down because each extra unit is worth less: <em>diminishing marginal benefit</em>.</p></div>
+    <div class="take"><h3>The gain</h3><p>Consumer surplus is the buyer&rsquo;s gain from exchange: the area <em>under demand and above the price</em>.</p></div>
+    <div class="take"><h3>The shifters</h3><p>The good&rsquo;s own price moves you <em>along</em> the curve; income, population, related prices, expectations and tastes move the <em>whole</em> curve.</p></div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Key terms">
+  <div class="eyebrow"><span>Reference</span><span class="q">Key terms</span></div>
+  <h2 class="stitle">Key terms at a glance</h2>
+  <div class="terms">
+    <div class="term"><b>Demand</b><span>The whole relationship between price and quantity demanded &mdash; the entire curve.</span></div>
+    <div class="term"><b>Quantity demanded</b><span>The amount buyers want at one particular price &mdash; a single point.</span></div>
+    <div class="term"><b>Law of demand</b><span>Price up, quantity demanded down; price down, quantity demanded up.</span></div>
+    <div class="term"><b>Marginal benefit</b><span>The extra benefit from one more unit; it diminishes as you consume more.</span></div>
+    <div class="term"><b>Consumer surplus</b><span>Buyer&rsquo;s gain from exchange: area under demand and above the price.</span></div>
+    <div class="term"><b>Normal / inferior good</b><span>Normal: demand rises with income. Inferior: demand falls with income.</span></div>
+    <div class="term"><b>Substitute / complement</b><span>Substitute: used instead of. Complement: used together with.</span></div>
+    <div class="term"><b>Ceteris paribus</b><span>&ldquo;All else equal&rdquo; &mdash; what is held constant when drawing one demand curve.</span></div>
+  </div>
+</section>
+
+    </div>
+  </div>
+  <nav class="nav" aria-label="Slide navigation">
+    <button class="navbtn" id="prev" aria-label="Previous slide">&#8249;</button>
+    <button class="navbtn" id="next" aria-label="Next slide">&#8250;</button>
+    <div class="rail" id="rail" role="tablist" aria-label="Slides"></div>
+    <span class="counter" id="counter">1 / 1</span>
+    <span class="hint">&#8592; &#8594; to move &#183; drag any slider</span>
+  </nav>
+</div>
+
+<script>
+(function(){
+"use strict";
+var NS="http://www.w3.org/2000/svg";
+function E(n,a,t){var e=document.createElementNS(NS,n);for(var k in a){if(a[k]!==null&&a[k]!==undefined)e.setAttribute(k,a[k]);}if(t!==undefined)e.textContent=t;return e;}
+function C(n){return "var("+n+")";}
+function money(v,d){return "$"+Number(v).toFixed(d===undefined?2:d);}
+var MINUS="\u2212";
+function signed(v,d){return v<0?MINUS+money(-v,d):money(v,d);}
+
+function Frame(svg,o){
+  var W=o.W||440,H=o.H||300,L=(o.L===undefined?50:o.L),R=(o.R===undefined?16:o.R),T=(o.T===undefined?16:o.T),B=(o.B===undefined?40:o.B);
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  var x0=o.x0||0,x1=o.x1,y0=(o.y0===undefined?0:o.y0),y1=o.y1;
+  var f={svg:svg,W:W,H:H,x0:x0,x1:x1,y0:y0,y1:y1,
+    x:function(v){return L+(v-x0)/(x1-x0)*(W-L-R);},
+    y:function(v){return H-B-(v-y0)/(y1-y0)*(H-T-B);},
+    add:function(e){svg.appendChild(e);return e;}};
+  f.left=L; f.right=W-R; f.top=T; f.bottom=H-B;
+  f.add(E("path",{d:"M"+L+" "+T+" L"+L+" "+(H-B)+" L"+(W-R)+" "+(H-B),fill:"none",stroke:C("--rule"),"stroke-width":1.2}));
+  if(o.xlabel)f.add(E("text",{x:(L+W-R)/2,y:H-6,fill:C("--ink-faint"),"font-size":11,"text-anchor":"middle","font-family":"'Source Sans 3',sans-serif"},o.xlabel));
+  if(o.ylabel)f.add(E("text",{x:-(T+H-B)/2,y:13,fill:C("--ink-faint"),"font-size":11,"text-anchor":"middle",transform:"rotate(-90)","font-family":"'Source Sans 3',sans-serif"},o.ylabel));
+  return f;
+}
+function line(f,ax,ay,bx,by,stroke,w,dash){return f.add(E("line",{x1:f.x(ax),y1:f.y(ay),x2:f.x(bx),y2:f.y(by),stroke:stroke,"stroke-width":w||2,"stroke-dasharray":dash||null,"stroke-linecap":"round"}));}
+function curve(f,fn,a,b,stroke,w,dash){
+  var d="",i,q,v;
+  for(i=0;i<=140;i++){q=a+(b-a)*i/140; v=fn(q); if(!isFinite(v)||v>f.y1||v<f.y0){d="";continue;} d+=(d===""?"M":"L")+f.x(q).toFixed(2)+" "+f.y(v).toFixed(2);}
+  return f.add(E("path",{d:d,fill:"none",stroke:stroke,"stroke-width":w||2,"stroke-linejoin":"round","stroke-dasharray":dash||null}));
+}
+function lab(f,px,py,txt,fill,size,anchor){return f.add(E("text",{x:px,y:py,fill:fill,"font-size":size||11,"text-anchor":anchor||"start","font-weight":600,"font-family":"'IBM Plex Mono',monospace"},txt));}
+function cross(f,qx,py){
+  f.add(E("path",{d:"M"+f.x(qx)+" "+f.bottom+" L"+f.x(qx)+" "+f.y(py),stroke:C("--crude"),"stroke-width":1.1,"stroke-dasharray":"3 3",fill:"none"}));
+  f.add(E("path",{d:"M"+f.left+" "+f.y(py)+" L"+f.x(qx)+" "+f.y(py),stroke:C("--crude"),"stroke-width":1.1,"stroke-dasharray":"3 3",fill:"none"}));
+  f.add(E("circle",{cx:f.x(qx),cy:f.y(py),r:3.6,fill:C("--crude")}));
+}
+function xticks(f,v,fmt){v.forEach(function(t){
+  f.add(E("line",{x1:f.x(t),x2:f.x(t),y1:f.bottom,y2:f.bottom+4,stroke:C("--rule"),"stroke-width":1}));
+  f.add(E("text",{x:f.x(t),y:f.bottom+15,fill:C("--ink-faint"),"font-size":10,"text-anchor":"middle","font-family":"'IBM Plex Mono',monospace"},fmt?fmt(t):String(t)));});}
+function yticks(f,v,fmt){v.forEach(function(t){
+  f.add(E("line",{x1:f.left-4,x2:f.left,y1:f.y(t),y2:f.y(t),stroke:C("--rule"),"stroke-width":1}));
+  f.add(E("text",{x:f.left-7,y:f.y(t)+3.4,fill:C("--ink-faint"),"font-size":10,"text-anchor":"end","font-family":"'IBM Plex Mono',monospace"},fmt?fmt(t):String(t)));});}
+function hatchDefs(f){
+  var d=E("defs"),p=E("pattern",{id:"dwlhatch",width:6,height:6,patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"});
+  p.appendChild(E("rect",{width:6,height:6,fill:C("--loss-fill")}));
+  p.appendChild(E("line",{x1:0,y1:0,x2:0,y2:6,stroke:C("--loss"),"stroke-width":1.6,opacity:.75}));
+  d.appendChild(p); f.add(d);
+}
+function V(id,tone,html){var e=document.getElementById(id); if(!e)return; e.dataset.tone=tone; e.innerHTML=html;}
+
+
+function num(v,d){return Number(v).toFixed(d===undefined?0:d);}
+function arrowDefs(f){
+  var id="arr-"+f.svg.id; f.arr="url(#"+id+")";
+  var d=E("defs"),m=E("marker",{id:id,viewBox:"0 0 10 10",refX:8,refY:5,markerWidth:7,markerHeight:7,orient:"auto-start-reverse"});
+  m.appendChild(E("path",{d:"M0 0 L10 5 L0 10 Z",fill:C("--crude")})); d.appendChild(m); f.add(d);
+}
+
+/* ============ Live 1: donuts and marginal benefit ============ */
+var MB=[5,4,2.75,1.5,0.5], FEEL=["Great","Good","OK","Meh","Gross"];
+function drawMB(p){
+  var svg=document.getElementById("fig-mb"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,x0:0.4,x1:5.6,y1:6,xlabel:"Donut",ylabel:"Marginal benefit ($)"});
+  yticks(f,[1,2,3,4,5],function(v){return "$"+v;});
+  var q=0;
+  MB.forEach(function(v,i){
+    var n=i+1, buy=v>=p; if(buy)q=n;
+    var w=(f.x(1.35)-f.x(0.65));
+    f.add(E("rect",{x:f.x(n)-w/2,y:f.y(v),width:w,height:f.y(0)-f.y(v),fill:buy?C("--gain-fill"):C("--surface-2"),stroke:buy?C("--gain"):C("--rule"),"stroke-width":1.4}));
+    lab(f,f.x(n),f.y(v)-7,"$"+v.toFixed(2),buy?C("--gain"):C("--ink-faint"),10.5,"middle");
+    f.add(E("text",{x:f.x(n),y:f.bottom+15,fill:C("--ink-faint"),"font-size":10.5,"text-anchor":"middle","font-family":"'Source Sans 3',sans-serif"},n+" · "+FEEL[i]));
+  });
+  f.add(E("line",{x1:f.left,x2:f.right,y1:f.y(p),y2:f.y(p),stroke:C("--crude"),"stroke-width":2.2}));
+  lab(f,f.right,f.y(p)-6,"price $"+p.toFixed(2),C("--crude"),11,"end");
+  document.getElementById("r-mbq").textContent=q;
+  document.getElementById("r-mblast").textContent=q?"$"+MB[q-1].toFixed(2):"—";
+  document.getElementById("r-mbnext").textContent=q<5?"$"+MB[q].toFixed(2):"—";
+  if(q===0)V("v-mb","loss","<strong>No donuts.</strong> Even the first, best donut is worth only $5.00 &mdash; less than the $"+p.toFixed(2)+" price.");
+  else if(q===5)V("v-mb","gain","<strong>All five.</strong> At $"+p.toFixed(2)+" even the gross fifth donut is worth the price. It takes a very low price to sell that last one.");
+  else V("v-mb","flat","<strong>Buy "+q+".</strong> Donut "+q+" is worth $"+MB[q-1].toFixed(2)+", at least the price. Donut "+(q+1)+" is worth only $"+MB[q].toFixed(2)+", so stop. To sell one more, the price must fall to $"+MB[q].toFixed(2)+".");
+}
+
+/* ============ Live 2: oil demand through (5,$55), (25,$20), (50,$5) ============ */
+var OB=485/23, OK=20*(20+OB)*(55+OB)/35, OC=OK/(55+OB)-5;
+function oilQ(p){return Math.max(0,OK/(p+OB)-OC);}
+function oilP(q){return OK/(q+OC)-OB;}
+function drawOil(p){
+  var svg=document.getElementById("fig-oil"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,x1:70,y1:80,xlabel:"Millions of barrels per day",ylabel:"Price per barrel ($)"});
+  yticks(f,[20,40,60,80],function(v){return "$"+v;});
+  xticks(f,[0,25,50]);
+  curve(f,oilP,0,66,C("--ink-soft"),2.4);
+  lab(f,f.x(62),f.y(oilP(62))-9,"D",C("--ink-soft"),12,"middle");
+  [[5,55],[25,20],[50,5]].forEach(function(pt){
+    f.add(E("circle",{cx:f.x(pt[0]),cy:f.y(pt[1]),r:3.6,fill:C("--stage"),stroke:C("--ink-soft"),"stroke-width":1.6}));
+    lab(f,f.x(pt[0])+8,f.y(pt[1])-6,"$"+pt[1]+", "+pt[0],C("--ink-faint"),10,"start");
+  });
+  var q=oilQ(p);
+  cross(f,q,p);
+  document.getElementById("r-oilq").textContent=q.toFixed(1)+"M bbl/day";
+  var who=p>=45?"Top uses only":p>=15?"+ heating, trucking":"+ plastics, rubber";
+  document.getElementById("r-oilwho").textContent=who;
+  if(p>=45)V("v-oil","loss","<strong>A high price.</strong> Only the uses with no good substitute &mdash; Air Force One, airlines &mdash; still buy. Frank stays home.");
+  else if(p>=15)V("v-oil","flat","<strong>A middle price.</strong> Airlines plus heating and other mid-value uses. Reading it vertically: "+q.toFixed(0)+" million barrels a day can sell for at most $"+p+".");
+  else V("v-oil","gain","<strong>A low price.</strong> Even low-value uses like plastic and rubber duckies switch back to oil, and quantity demanded climbs to "+q.toFixed(0)+" million barrels a day.");
+}
+
+/* ============ Live 3: consumer surplus, Q = 105 - 3.5P ============ */
+function drawCS(p){
+  var svg=document.getElementById("fig-cs"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,x1:112,y1:33,xlabel:"Quantity",ylabel:"Price ($)"});
+  var q=105-3.5*p, cs=0.5*(30-p)*q;
+  if(q>0.01)f.add(E("path",{d:"M"+f.x(0)+" "+f.y(30)+" L"+f.x(q)+" "+f.y(p)+" L"+f.x(0)+" "+f.y(p)+" Z",fill:C("--brine"),opacity:.28,stroke:C("--brine"),"stroke-width":1.2}));
+  yticks(f,[10,20,30],function(v){return "$"+v;});
+  xticks(f,[35,70,105]);
+  line(f,0,30,105,0,C("--ink-soft"),2.4);
+  lab(f,f.x(98),f.y(2)-10,"D",C("--ink-soft"),12,"middle");
+  lab(f,f.x(0)+6,f.y(30)-6,"max willingness to pay $30",C("--ink-faint"),10,"start");
+  if(q>0.01){
+    f.add(E("line",{x1:f.left,x2:f.right,y1:f.y(p),y2:f.y(p),stroke:C("--crude"),"stroke-width":1.4,"stroke-dasharray":"4 3"}));
+    cross(f,q,p);
+    if(q>14)lab(f,f.x(q*0.3),f.y(p+(30-p)*0.3)+4,"CS",C("--brine"),12,"middle");
+  }
+  document.getElementById("r-csq").textContent=q.toFixed(1);
+  document.getElementById("r-csh").textContent="$"+(30-p);
+  document.getElementById("r-cs").textContent="$"+cs.toLocaleString(undefined,{maximumFractionDigits:2});
+  var calc="&frac12; &times; "+(30-p)+" &times; "+num(q,q%1?1:0)+" = <strong>$"+cs.toLocaleString(undefined,{maximumFractionDigits:2})+"</strong>";
+  if(p>=30)V("v-cs","loss","<strong>At $30, nobody buys.</strong> That is the most any buyer is willing to pay, so quantity demanded and consumer surplus are both zero.");
+  else if(p===10)V("v-cs","gain","<strong>The worked example.</strong> CS = "+calc+".");
+  else V("v-cs",p<10?"gain":"flat","<strong>CS = "+calc.replace("<strong>","").replace("</strong>","")+".</strong> "+(p<10?"A lower price: buyers who were already buying pay less, and new buyers join.":"A higher price: a shorter, narrower triangle &mdash; buyers gain less."));
+}
+
+/* ============ Live 4: shift vs movement ============ */
+var EV=[
+  ["Incomes rise · iPads (normal good)","Income",1,"Demand for a normal good rises with income &mdash; at every price, people buy more."],
+  ["Incomes rise · Great Value (inferior)","Income",-1,"An inferior good: with more income, buyers switch to the name brand, so demand falls."],
+  ["Home game vs. LSU · local coffee","Population",1,"More people in town means more buyers at every price &mdash; at $20, 500 cups becomes 2,000."],
+  ["Price of OJ rises · apple juice","Substitutes",1,"Orange juice is now pricier, so some buyers switch to its substitute: demand for apple juice rises."],
+  ["Price of natural gas falls · oil","Substitutes",-1,"A cheaper substitute pulls buyers away, so demand for oil falls."],
+  ["Price of iPhones rises · iPhone apps","Complements",-1,"Fewer iPhones bought means fewer apps wanted: demand for the complement falls."],
+  ["Price of sugar falls · tea","Complements",1,"Cheaper sugar makes tea more attractive: demand for the complement rises."],
+  ["Cold snap expected · heaters","Expectations",1,"Expecting colder weather (and higher prices later), people buy heaters now."],
+  ["Lent begins · fish","Tastes",1,"Abstaining from meat raises the demand for fish, at every price."],
+  ["Friday fish rule relaxed · fish","Tastes",-1,"After 1966, Catholics no longer had to eat fish every Friday, and demand for fish fell."],
+  ["Price of oil falls · oil","None (own price)",0,"Oil&rsquo;s own price changed, so the curve stays put. Buyers slide down it: a change in <em>quantity demanded</em>, not in demand."],
+  ["Price of donuts rises · donuts","None (own price)",-2,"The good&rsquo;s own price rose: a movement up along the same curve. Quantity demanded falls; demand is unchanged."]
+];
+function dP(q){return 10-0.1*q;}
+function drawShift(i){
+  var ev=EV[i], svg=document.getElementById("fig-shift"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,x1:130,y1:13.5,xlabel:"Quantity",ylabel:"Price"});
+  arrowDefs(f);
+  line(f,0,10,100,0,ev[2]===0||ev[2]===-2?C("--ink-soft"):C("--ink-faint"),2.2,ev[2]===0||ev[2]===-2?null:"5 4");
+  lab(f,f.x(97),f.y(dP(97))-10,"D",C("--ink-faint"),12,"middle");
+  if(ev[2]===1||ev[2]===-1){
+    var s=ev[2]*25;
+    /* D': P = 10 - 0.1(Q - s), clipped to the axes */
+    var q0=Math.max(0,s), p0=10-0.1*(q0-s);
+    line(f,q0,p0,100+s,0,C("--crude"),2.6);
+    lab(f,f.x(100+s-3),f.y(0.3)-10,"D′",C("--crude"),12,"middle");
+    f.add(E("line",{x1:f.x(50),y1:f.y(5),x2:f.x(50+s*0.82),y2:f.y(5),stroke:C("--crude"),"stroke-width":1.8,"marker-end":f.arr}));
+    f.add(E("line",{x1:f.x(30),y1:f.y(7),x2:f.x(30+s*0.82),y2:f.y(7),stroke:C("--crude"),"stroke-width":1.8,"marker-end":f.arr}));
+    lab(f,f.right,f.top+12,s>0?"shift right: increase in demand":"shift left: decrease in demand",C("--crude"),11,"end");
+  } else {
+    var a=ev[2]===0?[40,60]:[60,40];
+    f.add(E("circle",{cx:f.x(a[0]),cy:f.y(dP(a[0])),r:4.5,fill:C("--stage"),stroke:C("--ink-faint"),"stroke-width":1.8}));
+    f.add(E("line",{x1:f.x(a[0]+(a[1]>a[0]?3:-3)),y1:f.y(dP(a[0]+(a[1]>a[0]?3:-3)))-8,x2:f.x(a[1]-(a[1]>a[0]?3:-3)),y2:f.y(dP(a[1]-(a[1]>a[0]?3:-3)))-8,stroke:C("--crude"),"stroke-width":1.8,"marker-end":f.arr}));
+    cross(f,a[1],dP(a[1]));
+    lab(f,f.right,f.top+12,"movement along D: change in quantity demanded",C("--crude"),11,"end");
+  }
+  document.getElementById("r-evk").textContent=ev[1];
+  document.getElementById("r-evr").textContent=ev[2]===1?"D shifts right":ev[2]===-1?"D shifts left":"Move along D";
+  V("v-ev",ev[2]===1?"gain":ev[2]===-1?"loss":"flat",ev[3]);
+}
+
+/* ---------------- wiring ---------------- */
+function on(id,fn){var e=document.getElementById(id); if(e)e.addEventListener("input",fn);}
+on("s-mb",function(e){var v=+e.target.value;document.getElementById("s-mb-val").textContent="$"+v.toFixed(2);drawMB(v);});
+drawMB(2.5);
+function setOil(v){document.getElementById("s-oil").value=v;document.getElementById("s-oil-val").textContent="$"+v;drawOil(v);}
+on("s-oil",function(e){setOil(+e.target.value);});
+Array.prototype.forEach.call(document.querySelectorAll("[data-oil]"),function(b){b.addEventListener("click",function(){setOil(+b.dataset.oil);});});
+setOil(20);
+on("s-cs",function(e){var v=+e.target.value;document.getElementById("s-cs-val").textContent="$"+v;drawCS(v);});
+drawCS(10);
+var sel=document.getElementById("s-ev");
+EV.forEach(function(ev,i){var o=document.createElement("option");o.value=i;o.textContent=ev[0];sel.appendChild(o);});
+sel.addEventListener("change",function(){drawShift(+sel.value);});
+drawShift(0);
+
+var slides=Array.prototype.slice.call(document.querySelectorAll(".slide"));
+var rail=document.getElementById("rail"), counter=document.getElementById("counter"), cur=0;
+slides.forEach(function(s,i){
+  var b=document.createElement("button"); b.type="button"; b.setAttribute("role","tab");
+  b.setAttribute("aria-label","Slide "+(i+1)+": "+(s.dataset.label||"")); b.title=(i+1)+". "+(s.dataset.label||"");
+  b.addEventListener("click",function(){go(i);}); rail.appendChild(b);
+});
+function go(i){
+  cur=Math.max(0,Math.min(slides.length-1,i));
+  slides.forEach(function(s,j){s.classList.toggle("on",j===cur);});
+  Array.prototype.forEach.call(rail.children,function(b,j){b.setAttribute("aria-current",j===cur?"true":"false");});
+  counter.textContent=(cur+1)+" / "+slides.length;
+}
+document.getElementById("prev").addEventListener("click",function(){go(cur-1);});
+document.getElementById("next").addEventListener("click",function(){go(cur+1);});
+document.addEventListener("keydown",function(e){
+  var t=e.target.tagName;
+  if(t==="INPUT"&&e.target.type==="text")return;
+  if(t==="INPUT"&&e.target.type==="range"&&(e.key==="ArrowLeft"||e.key==="ArrowRight"))return;
+  if(e.key==="ArrowRight"||e.key==="PageDown"||e.key===" "){go(cur+1);e.preventDefault();}
+  else if(e.key==="ArrowLeft"||e.key==="PageUp"){go(cur-1);e.preventDefault();}
+  else if(e.key==="Home")go(0); else if(e.key==="End")go(slides.length-1);
+});
+go(0);
+})();
+</script>
+</body>
+</html>
