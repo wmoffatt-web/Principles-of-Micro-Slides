@@ -786,7 +786,8 @@ function V(id,tone,html){var e=document.getElementById(id); if(!e)return; e.data
 
 function num(v,d){return Number(v).toFixed(d===undefined?0:d);}
 function arrowDefs(f){
-  var d=E("defs"),m=E("marker",{id:"arr",viewBox:"0 0 10 10",refX:8,refY:5,markerWidth:7,markerHeight:7,orient:"auto-start-reverse"});
+  var id="arr-"+f.svg.id; f.arr="url(#"+id+")";
+  var d=E("defs"),m=E("marker",{id:id,viewBox:"0 0 10 10",refX:8,refY:5,markerWidth:7,markerHeight:7,orient:"auto-start-reverse"});
   m.appendChild(E("path",{d:"M0 0 L10 5 L0 10 Z",fill:C("--crude")})); d.appendChild(m); f.add(d);
 }
 
@@ -892,13 +893,13 @@ function drawShift(i){
     var q0=Math.max(0,s), p0=10-0.1*(q0-s);
     line(f,q0,p0,100+s,0,C("--crude"),2.6);
     lab(f,f.x(100+s-3),f.y(0.3)-10,"D′",C("--crude"),12,"middle");
-    f.add(E("line",{x1:f.x(50),y1:f.y(5),x2:f.x(50+s*0.82),y2:f.y(5),stroke:C("--crude"),"stroke-width":1.8,"marker-end":"url(#arr)"}));
-    f.add(E("line",{x1:f.x(30),y1:f.y(7),x2:f.x(30+s*0.82),y2:f.y(7),stroke:C("--crude"),"stroke-width":1.8,"marker-end":"url(#arr)"}));
+    f.add(E("line",{x1:f.x(50),y1:f.y(5),x2:f.x(50+s*0.82),y2:f.y(5),stroke:C("--crude"),"stroke-width":1.8,"marker-end":f.arr}));
+    f.add(E("line",{x1:f.x(30),y1:f.y(7),x2:f.x(30+s*0.82),y2:f.y(7),stroke:C("--crude"),"stroke-width":1.8,"marker-end":f.arr}));
     lab(f,f.right,f.top+12,s>0?"shift right: increase in demand":"shift left: decrease in demand",C("--crude"),11,"end");
   } else {
     var a=ev[2]===0?[40,60]:[60,40];
     f.add(E("circle",{cx:f.x(a[0]),cy:f.y(dP(a[0])),r:4.5,fill:C("--stage"),stroke:C("--ink-faint"),"stroke-width":1.8}));
-    f.add(E("line",{x1:f.x(a[0]+(a[1]>a[0]?3:-3)),y1:f.y(dP(a[0]+(a[1]>a[0]?3:-3)))-8,x2:f.x(a[1]-(a[1]>a[0]?3:-3)),y2:f.y(dP(a[1]-(a[1]>a[0]?3:-3)))-8,stroke:C("--crude"),"stroke-width":1.8,"marker-end":"url(#arr)"}));
+    f.add(E("line",{x1:f.x(a[0]+(a[1]>a[0]?3:-3)),y1:f.y(dP(a[0]+(a[1]>a[0]?3:-3)))-8,x2:f.x(a[1]-(a[1]>a[0]?3:-3)),y2:f.y(dP(a[1]-(a[1]>a[0]?3:-3)))-8,stroke:C("--crude"),"stroke-width":1.8,"marker-end":f.arr}));
     cross(f,a[1],dP(a[1]));
     lab(f,f.right,f.top+12,"movement along D: change in quantity demanded",C("--crude"),11,"end");
   }
