@@ -1,1 +1,972 @@
 
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>Monopoly and Market Power</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ink:#16211E; --ink-soft:#44544F; --ink-faint:#7C8C87;
+  --paper:#F2F4F3; --surface:#FFFFFF; --surface-2:#E7EBE9;
+  --rule:#CBD4D1; --rule-soft:#DFE5E3;
+  --crude:#C47418; --crude-soft:#F0DCBE;
+  --brine:#3F7A72; --brine-soft:#D7E6E3;
+  --gain:#2E7D52; --gain-fill:rgba(46,125,82,.16);
+  --loss:#B5432F; --loss-fill:rgba(181,67,47,.16);
+  --stage:#FFFFFF; --shadow:0 1px 2px rgba(22,33,30,.06),0 10px 34px rgba(22,33,30,.10);
+}
+:root:not([data-theme="light"]) { color-scheme: light dark; }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#E7EDEA; --ink-soft:#A6B5B0; --ink-faint:#74857F;
+    --paper:#0E1A17; --surface:#16241F; --surface-2:#1E302A;
+    --rule:#2E443D; --rule-soft:#243730;
+    --crude:#E0A050; --crude-soft:#3B2E18;
+    --brine:#7FB8AF; --brine-soft:#1B312D;
+    --gain:#5FBE8A; --gain-fill:rgba(95,190,138,.18);
+    --loss:#E2836C; --loss-fill:rgba(226,131,108,.18);
+    --stage:#13201C; --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 40px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#E7EDEA; --ink-soft:#A6B5B0; --ink-faint:#74857F;
+  --paper:#0E1A17; --surface:#16241F; --surface-2:#1E302A;
+  --rule:#2E443D; --rule-soft:#243730;
+  --crude:#E0A050; --crude-soft:#3B2E18;
+  --brine:#7FB8AF; --brine-soft:#1B312D;
+  --gain:#5FBE8A; --gain-fill:rgba(95,190,138,.18);
+  --loss:#E2836C; --loss-fill:rgba(226,131,108,.18);
+  --stage:#13201C; --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 40px rgba(0,0,0,.45);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Sans 3",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  margin:0; min-height:100vh; display:flex; flex-direction:column;
+}
+h1,h2,h3{font-family:Spectral,Georgia,"Times New Roman",serif; font-weight:600; text-wrap:balance; margin:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+/* ---------- shell ---------- */
+.shell{flex:1; display:flex; flex-direction:column; min-height:0; padding:14px 16px 0}
+.stagewrap{flex:1; display:flex; align-items:center; justify-content:center; min-height:0}
+.stage{
+  container-type:inline-size;
+  width:100%; max-width:min(1420px, calc((100vh - 118px) * 16 / 9)); aspect-ratio:16/9;
+  background:var(--stage); border:1px solid var(--rule-soft); border-radius:3px;
+  box-shadow:var(--shadow); position:relative; overflow:hidden;
+}
+.slide{position:absolute; inset:0; padding:4.2cqi 5cqi 4.4cqi; display:none; flex-direction:column; gap:2.2cqi}
+.slide.on{display:flex}
+.slide[data-pad="tight"]{padding:3.2cqi 4cqi 3.4cqi; gap:1.6cqi}
+
+/* ---------- slide furniture ---------- */
+.eyebrow{
+  font-size:1.18cqi; letter-spacing:.17em; text-transform:uppercase; font-weight:700;
+  color:var(--crude); display:flex; gap:.9em; align-items:baseline;
+}
+.eyebrow .q{color:var(--ink-faint); letter-spacing:.17em}
+.stitle{font-size:4.1cqi; line-height:1.08; letter-spacing:-.01em}
+.slide[data-pad="tight"] .stitle{font-size:3.3cqi}
+.lede{font-size:2.05cqi; line-height:1.45; color:var(--ink-soft); max-width:46ch}
+.body{display:flex; flex-direction:column; gap:1.1cqi; font-size:1.95cqi; line-height:1.42}
+.body li{margin:0}
+ul.body{list-style:none; padding:0}
+ul.body li{position:relative; padding-left:1.5em}
+ul.body li::before{content:""; position:absolute; left:.2em; top:.62em; width:.5em; height:.5em; background:var(--crude); border-radius:50%}
+ul.body li ul{list-style:none; padding:.5em 0 0 0; display:flex; flex-direction:column; gap:.45em; font-size:.88em; color:var(--ink-soft)}
+ul.body li ul li::before{width:.42em; height:.42em; background:none; border:1px solid var(--brine); top:.55em}
+.content{flex:1; display:flex; gap:3cqi; min-height:0}
+.col{flex:1; display:flex; flex-direction:column; gap:1.6cqi; min-width:0}
+.col.narrow{flex:0 0 32cqi}
+.col.wide{flex:1.5}
+
+/* ---------- definition cards ---------- */
+.defs{display:flex; flex-direction:column; gap:1.3cqi}
+.defgrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.3cqi}
+.def{background:var(--surface-2); border-radius:2px; padding:1.5cqi 1.8cqi; display:flex; flex-direction:column; gap:.5cqi}
+.def dt{font-family:Spectral,Georgia,serif; font-weight:700; font-size:2cqi; color:var(--ink)}
+.def dd{margin:0; font-size:1.72cqi; line-height:1.38; color:var(--ink-soft)}
+.def .eq{font-family:"IBM Plex Mono",monospace; font-size:1.6cqi; color:var(--crude); font-weight:500; letter-spacing:.02em}
+
+.formula{margin:0; font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:2.9cqi; font-weight:500;
+  color:var(--ink); display:flex; align-items:baseline; gap:.75em; flex-wrap:wrap; font-variant-numeric:tabular-nums}
+.formula b{color:var(--crude); font-weight:600; font-size:1.18em; line-height:1}
+.formula small{font-family:"Source Sans 3",sans-serif; font-size:1.3cqi; letter-spacing:.14em;
+  text-transform:uppercase; font-weight:700; color:var(--ink-faint)}
+
+/* ---------- numbered question cards ---------- */
+.qcards{display:grid; grid-template-columns:repeat(3,1fr); gap:2cqi; flex:1; align-content:center}
+.qcard{display:flex; flex-direction:column; gap:1cqi; padding-top:1.4cqi; border-top:2px solid var(--crude)}
+.qcard .n{font-family:"IBM Plex Mono",monospace; font-size:1.3cqi; color:var(--crude); font-weight:600; letter-spacing:.14em}
+.qcard h3{font-size:2.5cqi; line-height:1.15}
+.qcard p{margin:0; font-size:1.72cqi; line-height:1.4; color:var(--ink-soft)}
+
+/* ---------- controls ---------- */
+.panel{background:var(--surface-2); border-radius:2px; padding:1.6cqi 1.8cqi; display:flex; flex-direction:column; gap:1.2cqi}
+.ctrl{display:flex; flex-direction:column; gap:.55cqi}
+.ctrl label{font-size:1.2cqi; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--ink-faint)}
+.ctrl .val{font-family:"IBM Plex Mono",monospace; font-size:2.6cqi; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums}
+input[type=range]{
+  -webkit-appearance:none; appearance:none; width:100%; height:1.5cqi; background:transparent; cursor:pointer; margin:0;
+}
+input[type=range]::-webkit-slider-runnable-track{height:.45cqi; background:var(--rule); border-radius:1px}
+input[type=range]::-moz-range-track{height:.45cqi; background:var(--rule); border-radius:1px}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:1.9cqi; height:1.9cqi; border-radius:50%; background:var(--crude);
+  border:.35cqi solid var(--stage); box-shadow:0 0 0 1px var(--crude); margin-top:-.75cqi;
+}
+input[type=range]::-moz-range-thumb{
+  width:1.9cqi; height:1.9cqi; border-radius:50%; background:var(--crude); border:.35cqi solid var(--stage); box-shadow:0 0 0 1px var(--crude);
+}
+input[type=range]:focus-visible{outline:2px solid var(--brine); outline-offset:4px}
+.readout{display:grid; grid-template-columns:auto 1fr; gap:.45cqi 1.2cqi; font-size:1.75cqi; align-items:baseline}
+.readout dt{color:var(--ink-faint); font-size:1.5cqi; letter-spacing:.06em}
+.readout dd{margin:0; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-weight:500}
+.verdict{font-size:1.85cqi; line-height:1.36; padding:1.1cqi 1.3cqi; border-radius:2px; background:var(--surface); color:var(--ink)}
+.verdict strong{font-family:Spectral,Georgia,serif}
+.verdict[data-tone="gain"]{box-shadow:inset 0 0 0 1px var(--gain); color:var(--ink)}
+.verdict[data-tone="loss"]{box-shadow:inset 0 0 0 1px var(--loss)}
+.verdict[data-tone="flat"]{box-shadow:inset 0 0 0 1px var(--crude)}
+.btnrow{display:flex; gap:.8cqi; flex-wrap:wrap}
+button.b{
+  font-family:"Source Sans 3",sans-serif; font-size:1.45cqi; font-weight:600; letter-spacing:.02em;
+  padding:.7cqi 1.3cqi; border-radius:2px; border:1px solid var(--rule); background:var(--surface);
+  color:var(--ink); cursor:pointer;
+}
+button.b:hover{border-color:var(--crude); color:var(--crude)}
+button.b[aria-pressed="true"]{background:var(--crude); border-color:var(--crude); color:#fff}
+:root[data-theme="dark"] button.b[aria-pressed="true"], :root:not([data-theme="light"]) button.b[aria-pressed="true"]{color:#14221D}
+button.b:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+
+/* ---------- figure ---------- */
+.fig{flex:1; display:flex; flex-direction:column; gap:.7cqi; min-height:0}
+.fig svg{width:100%; height:100%; display:block; flex:1; min-height:0; overflow:visible}
+.figcap{font-size:1.35cqi; color:var(--ink-faint); line-height:1.35}
+.legend{display:flex; gap:1.6cqi; flex-wrap:wrap; font-size:1.4cqi; color:var(--ink-soft)}
+.legend span{display:flex; align-items:center; gap:.5em}
+.swatch{width:1.5em; height:.28em; border-radius:1px; display:inline-block}
+.swatch-hatch{height:.85em; border:1px solid var(--loss);
+  background:repeating-linear-gradient(45deg,var(--loss) 0 1px,transparent 1px 4px),var(--loss-fill)}
+.figpair{display:flex; gap:2cqi; flex:1; min-height:0}
+.figpair>svg{flex:1 1 0; width:auto; min-width:0}
+.col.narrow .panel{padding:1.3cqi 1.4cqi; gap:1cqi}
+.col.narrow .ctrl .val{font-size:2.3cqi}
+.col.narrow .readout{font-size:1.58cqi; gap:.32cqi 1cqi}
+.col.narrow .readout dt{font-size:1.32cqi}
+.col.narrow .verdict{font-size:1.6cqi; padding:.9cqi 1.1cqi; line-height:1.33}
+.slide[data-figs="pair"] .content{gap:2.2cqi}
+.slide[data-figs="pair"] .col.narrow{flex:0 0 25cqi}
+.slide[data-figs="pair"] .panel{padding:1.1cqi 1.2cqi; gap:.9cqi}
+.slide[data-figs="pair"] .ctrl .val{font-size:2.1cqi}
+.slide[data-figs="pair"] .ctrl label{font-size:1.05cqi}
+.slide[data-figs="pair"] .readout{font-size:1.5cqi; gap:.3cqi .8cqi}
+.slide[data-figs="pair"] .readout dt{font-size:1.28cqi}
+.slide[data-figs="pair"] .verdict{font-size:1.5cqi; padding:.85cqi 1cqi}
+.slide[data-figs="pair"] ul.body{font-size:1.62cqi; gap:.85cqi}
+.slide[data-figs="pair"] .def{padding:1.1cqi 1.2cqi}
+.slide[data-figs="pair"] .def dt{font-size:1.72cqi}
+.slide[data-figs="pair"] .def dd{font-size:1.46cqi}
+.slide[data-figs="pair"] button.b{font-size:1.25cqi; padding:.6cqi 1cqi}
+.slide[data-figs="pair"] .figcap{font-size:1.24cqi}
+
+/* ---------- data table ---------- */
+.tbl{width:100%; border-collapse:collapse; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:1.42cqi}
+.tbl th{
+  font-family:"Source Sans 3",sans-serif; font-size:1.18cqi; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-faint); font-weight:700; text-align:right; padding:.55cqi .6cqi; border-bottom:1px solid var(--rule);
+}
+.tbl th:first-child, .tbl td:first-child{text-align:left}
+.tbl td{padding:.5cqi .6cqi; border-bottom:1px solid var(--rule-soft); text-align:right; color:var(--ink-soft)}
+.tbl tr.hi td{background:var(--crude-soft); color:var(--ink); font-weight:600}
+.tbl tr.peak td:first-child::after{content:" \25C0"; color:var(--crude); font-size:.8em}
+.tbl input{
+  width:100%; font:inherit; text-align:right; background:var(--surface); color:var(--ink);
+  border:1px solid var(--rule); border-radius:2px; padding:.25cqi .4cqi;
+}
+.tbl input:focus-visible{outline:2px solid var(--brine); outline-offset:1px}
+.tbl input[data-state="ok"]{border-color:var(--gain); background:var(--gain-fill); color:var(--ink)}
+.tbl input[data-state="no"]{border-color:var(--loss); background:var(--loss-fill); color:var(--ink)}
+.given td{color:var(--ink)}
+
+/* ---------- market-structure spectrum ---------- */
+.spectrum{display:flex; flex-direction:column; gap:1cqi; flex:1; min-height:0}
+.spec-ends{display:flex; justify-content:space-between; font-size:1.12cqi; letter-spacing:.16em;
+  text-transform:uppercase; font-weight:700}
+.spec-ends .l{color:var(--brine)}
+.spec-ends .r{color:var(--loss)}
+.spec-axis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.6cqi;
+  position:relative; height:2.4cqi; align-items:center}
+.spec-axis::before{content:""; position:absolute; left:0; right:0; top:50%; height:.32cqi;
+  transform:translateY(-50%); border-radius:2px;
+  background:linear-gradient(90deg,var(--brine) 0%,var(--brine) 12%,var(--crude) 58%,var(--loss) 95%)}
+.spec-axis i{justify-self:center; position:relative; width:1.25cqi; height:1.25cqi; border-radius:50%;
+  background:var(--stage); border:.32cqi solid var(--ink-faint)}
+.spec-axis i[data-on]{border-color:var(--crude); box-shadow:0 0 0 .4cqi var(--crude-soft)}
+.spec-cols{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.6cqi; flex:1; min-height:0}
+.spec{display:flex; flex-direction:column; gap:.75cqi; min-width:0}
+.spec h3{font-size:1.95cqi; line-height:1.12; min-height:4.4cqi}
+.spec[data-here] h3{color:var(--crude)}
+.spec .tag{font-family:"IBM Plex Mono",monospace; font-size:1.05cqi; letter-spacing:.12em;
+  font-weight:600; color:var(--crude)}
+.spec svg{width:100%; height:8.6cqi; display:block}
+.spec dl{display:grid; grid-template-columns:auto 1fr; gap:.3cqi .8cqi; margin:0; font-size:1.4cqi; align-items:baseline}
+.spec dt{color:var(--ink-faint); font-size:1.18cqi; letter-spacing:.07em; text-transform:uppercase; font-weight:700}
+.spec dd{margin:0; color:var(--ink-soft); line-height:1.3}
+.spec[data-here] dd{color:var(--ink)}
+
+/* ---------- source table ---------- */
+.srctbl{width:100%; border-collapse:collapse; font-size:1.62cqi}
+.srctbl th{font-size:1.15cqi; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint);
+  font-weight:700; text-align:left; padding:.6cqi .8cqi; border-bottom:1px solid var(--rule)}
+.srctbl td{padding:.62cqi .8cqi; border-bottom:1px solid var(--rule-soft); vertical-align:baseline}
+.srctbl td:first-child{font-weight:600; color:var(--ink); white-space:nowrap}
+.srctbl td:last-child{color:var(--ink-soft)}
+.srctbl tr:last-child td{border-bottom:none}
+
+/* ---------- key-term list ---------- */
+.terms{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.9cqi 2.4cqi; flex:1; align-content:start}
+.term{display:flex; flex-direction:column; gap:.2cqi; padding-bottom:.8cqi; border-bottom:1px solid var(--rule-soft)}
+.term b{font-family:Spectral,Georgia,serif; font-size:1.72cqi; color:var(--ink)}
+.term span{font-size:1.48cqi; line-height:1.34; color:var(--ink-soft)}
+
+/* ---------- big stat ---------- */
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:2.4cqi}
+.stat{display:flex; flex-direction:column; gap:.3cqi}
+.stat b{font-family:"IBM Plex Mono",monospace; font-size:4.6cqi; font-weight:600; color:var(--crude); line-height:1}
+.stat span{font-size:1.52cqi; line-height:1.34; color:var(--ink-soft)}
+
+/* ---------- takeaways ---------- */
+.takes{display:flex; flex-direction:column; gap:1.5cqi; flex:1; justify-content:center}
+.take{display:grid; grid-template-columns:14cqi 1fr; gap:2cqi; align-items:baseline; padding-bottom:1.5cqi; border-bottom:1px solid var(--rule-soft)}
+.take:last-child{border-bottom:none; padding-bottom:0}
+.take h3{font-size:2.1cqi; color:var(--crude); line-height:1.15}
+.take p{margin:0; font-size:1.9cqi; line-height:1.42; color:var(--ink-soft)}
+.take p em{color:var(--ink); font-style:normal; font-weight:600}
+
+/* ---------- title slide ---------- */
+.titleslide{justify-content:center; gap:0}
+.titleslide .kicker{font-size:1.4cqi; letter-spacing:.24em; text-transform:uppercase; color:var(--ink-faint); font-weight:700}
+.titleslide h1{font-size:6.4cqi; line-height:1.03; letter-spacing:-.02em; margin:2.2cqi 0 1.6cqi; max-width:20ch}
+.titleslide .sub{font-size:2.1cqi; color:var(--ink-soft); max-width:52ch; line-height:1.45}
+.titleslide .meta{margin-top:3.4cqi; font-size:1.45cqi; color:var(--ink-faint); display:flex; gap:1.2em; flex-wrap:wrap}
+.titleslide .meta b{color:var(--crude); font-weight:600}
+.derrick{position:absolute; right:4cqi; bottom:0; width:34cqi; height:76cqi; opacity:.9; pointer-events:none}
+
+/* ---------- section divider ---------- */
+.divider{justify-content:center; background:var(--ink); color:var(--paper)}
+.divider .num{font-family:"IBM Plex Mono",monospace; font-size:1.4cqi; letter-spacing:.2em; color:var(--crude); font-weight:600}
+.divider h2{font-size:5.2cqi; line-height:1.06; margin:1.6cqi 0 1.4cqi; max-width:22ch; color:var(--paper)}
+.divider p{margin:0; font-size:2cqi; line-height:1.45; color:#A6B5B0; max-width:48ch}
+
+/* ---------- nav ---------- */
+.nav{
+  display:flex; align-items:center; gap:14px; padding:10px 4px 12px; max-width:1420px;
+  margin:0 auto; width:100%; font-size:13px; color:var(--ink-faint);
+}
+.rail{flex:1; display:flex; gap:3px; align-items:stretch; height:16px}
+.rail button{
+  flex:1; border:none; padding:0; background:transparent; cursor:pointer; position:relative; min-width:0;
+}
+.rail button::after{content:""; position:absolute; left:0; right:0; top:7px; height:2px; background:var(--rule); transition:background .15s, height .15s, top .15s}
+.rail button[aria-current="true"]::after{background:var(--crude); height:4px; top:6px}
+.rail button:hover::after{background:var(--brine)}
+.rail button:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.counter{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; letter-spacing:.04em; white-space:nowrap}
+.navbtn{
+  border:1px solid var(--rule); background:var(--surface); color:var(--ink); border-radius:2px;
+  width:30px; height:30px; cursor:pointer; font-size:15px; line-height:1; display:grid; place-items:center;
+}
+.navbtn:hover{border-color:var(--crude); color:var(--crude)}
+.navbtn:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.hint{white-space:nowrap}
+@media (max-width:760px){ .hint{display:none} }
+
+@media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important} }
+
+@media print{
+  @page{size:13.333in 7.5in; margin:0}
+  *{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important}
+  body{background:#fff; display:block}
+  .nav{display:none}
+  .shell{padding:0; display:block}
+  .stagewrap{display:block}
+  .stage{width:100%; max-width:none; max-height:none; height:auto; aspect-ratio:auto;
+    box-shadow:none; border:none; border-radius:0; overflow:visible; background:#fff}
+  .slide{display:flex !important; position:relative; inset:auto; width:100%; aspect-ratio:16/9;
+    overflow:hidden; background:var(--stage); break-after:page; page-break-after:always}
+  .slide:last-child{break-after:auto; page-break-after:auto}
+}
+</style>
+<div class="shell">
+  <div class="stagewrap">
+    <div class="stage" id="stage">
+
+<section class="slide titleslide on" data-label="Title">
+  <span class="kicker">Principles of Microeconomics &#183; Chapter 13</span>
+  <h1>Monopoly and Market Power</h1>
+  <p class="sub">A firm facing a downward-sloping demand curve has to cut the price to sell one more unit. That single fact puts marginal revenue below price &mdash; and everything else in this chapter follows from it.</p>
+  <div class="meta"><span><b>Running example:</b> Combivir, the AIDS drug</span><span><b>Drag</b> the sliders on the live diagrams</span></div>
+  <svg class="derrick" viewBox="0 0 160 360" aria-hidden="true">
+    <g fill="none" stroke="var(--rule)" stroke-width="1.6">
+      <path d="M26 352 L26 150 Q26 60 80 60 Q134 60 134 150 L134 352"/>
+      <path d="M26 352 L134 352 M26 214 L134 214 M26 278 L134 278"/>
+    </g>
+    <path d="M80 60 L80 352" stroke="var(--rule)" stroke-width="1.2" fill="none" stroke-dasharray="4 4"/>
+    <rect x="62" y="96" width="36" height="58" rx="4" fill="none" stroke="var(--crude)" stroke-width="2.4"/>
+    <path d="M62 125 L98 125" stroke="var(--crude)" stroke-width="2.4"/>
+  </svg>
+</section>
+
+<section class="slide" data-label="The hook">
+  <div class="eyebrow"><span>Market power</span><span class="q">The hook</span></div>
+  <h2 class="stitle">The same pill, at twenty-five times the price</h2>
+  <div class="stats">
+    <div class="stat"><b>$0.50</b><span>What a Combivir pill costs to produce &mdash; and what an equivalent pill sold for in India, which did not recognize the patent.</span></div>
+    <div class="stat"><b>$12.50</b><span>What the same pill sold for in the United States, where GlaxoSmithKline held the patent.</span></div>
+    <div class="stat"><b>50%</b><span>The fall in U.S. AIDS deaths between 1995 and 1997, after drugs like Combivir arrived.</span></div>
+  </div>
+  <p class="lede">Since 1981 AIDS has killed over 40 million people. The Indian price sits essentially at marginal cost; the U.S. price sits far above it. The whole gap is <strong>market power</strong> &mdash; and this chapter is about where it comes from, what it costs, and what it buys.</p>
+</section>
+
+<section class="slide divider" data-label="Part I">
+  <span class="num">PART ONE</span>
+  <h2>What market power is</h2>
+  <p>Not the power to charge anything you like &mdash; the power to charge above marginal cost without someone undercutting you.</p>
+</section>
+
+<section class="slide" data-label="Market power">
+  <div class="eyebrow"><span>Market power</span><span class="q">Definitions</span></div>
+  <h2 class="stitle">Pricing above marginal cost, without fear of entry</h2>
+  <div class="content">
+    <div class="col">
+      <div class="defs">
+        <div class="def"><dt>Market power</dt><dd>The power to raise price above marginal cost without fear that other firms will enter the market.</dd></div>
+        <div class="def"><dt>Monopoly</dt><dd>A firm with market power.</dd></div>
+      </div>
+      <p class="figcap">Note how low the bar is: &ldquo;monopoly&rdquo; here does not require being the only seller on earth. It requires only that nobody can readily undercut you.</p>
+    </div>
+    <div class="col">
+      <ul class="body">
+        <li>GlaxoSmithKline&rsquo;s <strong>patent</strong> gave it the exclusive right to make, use, and sell Combivir.</li>
+        <li>That exclusivity blocked competition &mdash; and the blocked competition <em>is</em> the market power.</li>
+        <li>Remove the patent, as India did, and the price collapses to marginal cost. Same drug, same factory costs, completely different price.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part II">
+  <span class="num">PART TWO</span>
+  <h2>Why marginal revenue falls below price</h2>
+  <p>The competitive firm could sell all it wanted at the market price. A firm with market power cannot &mdash; and the arithmetic of that is the heart of the chapter.</p>
+</section>
+
+<section class="slide" data-label="MR below P">
+  <div class="eyebrow"><span>Marginal revenue</span><span class="q">The logic</span></div>
+  <h2 class="stitle">The price cut applies to every unit, not just the last one</h2>
+  <p class="formula"><b>MR</b> &lt; P <small>for any firm facing a downward-sloping demand curve</small></p>
+  <div class="content">
+    <div class="qcard"><span class="n">THE COMPETITIVE CASE</span><h3>MR = P</h3><p>The firm is small enough to sell as much as it likes at the going price. One more unit adds exactly the price to revenue. Nothing is given up.</p></div>
+    <div class="qcard"><span class="n">WITH MARKET POWER</span><h3>MR &lt; P</h3><p>To sell one more unit the firm must cut the price &mdash; and the lower price applies to <em>every</em> unit, including the ones it could have sold at the old, higher price. The extra revenue is the new sale <em>minus</em> that loss on all the rest.</p></div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: the revenue table">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag quantity</span></div>
+  <h2 class="stitle">Watch marginal revenue fall away from price</h2>
+  <div class="content">
+    <div class="col wide"><div class="fig"><div id="tbl-rev"></div></div></div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-q">Units sold</label>
+          <span class="val" id="s-q-val">1</span>
+          <input type="range" id="s-q" min="1" max="6" step="1" value="1" aria-label="Units sold">
+        </div>
+        <dl class="readout">
+          <dt>Price</dt><dd id="r-p">&mdash;</dd>
+          <dt>Total revenue</dt><dd id="r-tr">&mdash;</dd>
+          <dt>Marginal revenue</dt><dd id="r-mr">&mdash;</dd>
+          <dt>Gap, P &minus; MR</dt><dd id="r-gap">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-rev" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: D and MR">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag quantity</span></div>
+  <h2 class="stitle">Same intercept, twice the slope</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-dmr" role="img" aria-label="A downward-sloping demand curve with the marginal revenue curve starting at the same vertical intercept and falling twice as steeply, so it lies below demand everywhere."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--ink-soft)"></i>Demand</span><span><i class="swatch" style="background:var(--brine)"></i>Marginal revenue</span><span><i class="swatch" style="background:var(--crude)"></i>The gap you give up</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-q2">Units sold</label>
+          <span class="val" id="s-q2-val">1</span>
+          <input type="range" id="s-q2" min="1" max="9" step="0.5" value="1" aria-label="Units sold">
+        </div>
+        <dl class="readout">
+          <dt>Price on D</dt><dd id="r-p2">&mdash;</dd>
+          <dt>MR</dt><dd id="r-mr2">&mdash;</dd>
+          <dt>Total revenue</dt><dd id="r-tr2">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-dmr" data-tone="flat">&mdash;</div>
+      <p class="figcap">For a straight-line demand curve, MR starts at the same point on the vertical axis and falls twice as fast.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part III">
+  <span class="num">PART THREE</span>
+  <h2>How a monopolist maximizes profit</h2>
+  <p>The rule is the one from Chapter 11 &mdash; produce where MR = MC. What changes is where the price comes from.</p>
+</section>
+
+<section class="slide" data-label="The rule">
+  <div class="eyebrow"><span>Profit maximization</span><span class="q">The rule</span></div>
+  <h2 class="stitle">Quantity off MR = MC. Price off the demand curve.</h2>
+  <div class="content">
+    <div class="col">
+      <ul class="body">
+        <li>The profit-maximizing rule is <strong>unchanged</strong>: keep producing while the next unit adds more revenue than cost, and stop where <span class="mono">MR = MC</span>.</li>
+        <li>What changes is the <strong>price</strong>. The competitive firm read its price off a flat line. The monopolist reads it off the <em>demand curve</em>, at the quantity it chose.</li>
+        <li>Because MR lies below demand, that price sits <strong>above marginal cost</strong> &mdash; and the gap is the profit per unit.</li>
+      </ul>
+    </div>
+    <div class="col narrow">
+      <div class="defs">
+        <div class="def"><dt>The monopoly rule</dt><dd>Pick Q where MR = MC, then charge the price the demand curve will bear at that Q.<span class="eq">&pi; = (P &minus; AC) &times; Q</span></dd></div>
+        <div class="def"><dt>Combivir, by the numbers</dt><dd>MR = MC at <strong>80 million pills</strong>; price off demand <strong>$12.50</strong>; profit <strong>$10.00</strong> a pill &rarr; <strong>$800 million</strong>.</dd></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: monopoly profit">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag quantity</span></div>
+  <h2 class="stitle">Finding Combivir&rsquo;s 80 million pills</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-mono" role="img" aria-label="Demand, marginal revenue and a flat marginal cost curve; at the chosen quantity the price is read off demand and the profit rectangle runs from marginal cost up to that price."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--ink-soft)"></i>Demand</span><span><i class="swatch" style="background:var(--brine)"></i>MR</span><span><i class="swatch" style="background:var(--loss)"></i>MC = AC = $2.50</span><span><i class="swatch" style="background:var(--gain)"></i>Profit</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-qm">Pills, millions</label>
+          <span class="val" id="s-qm-val">20</span>
+          <input type="range" id="s-qm" min="5" max="165" step="2.5" value="20" aria-label="Pills produced, millions">
+        </div>
+        <dl class="readout">
+          <dt>Price off demand</dt><dd id="r-pm">&mdash;</dd>
+          <dt>Marginal revenue</dt><dd id="r-mrm">&mdash;</dd>
+          <dt>Profit per pill</dt><dd id="r-ppp">&mdash;</dd>
+          <dt>Total profit</dt><dd id="r-tp">&mdash;</dd>
+        </dl>
+        <div class="btnrow"><button class="b" data-setq="80">Jump to MR = MC</button></div>
+      </div>
+      <div class="verdict" id="v-mono" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Elasticity and markup">
+  <div class="eyebrow"><span>Profit maximization</span><span class="q">Elasticity</span></div>
+  <h2 class="stitle">The less price-sensitive the buyer, the bigger the markup</h2>
+  <div class="content">
+    <div class="col">
+      <ul class="body">
+        <li>The more <strong>inelastic</strong> demand is, the larger the markup of price over marginal cost the firm can sustain.</li>
+        <li>Two effects make prescription-drug demand unusually inelastic:
+          <ul>
+            <li><strong>&ldquo;You can&rsquo;t take it with you.&rdquo;</strong> The seriously ill are not sensitive to the price of a life-saving drug.</li>
+            <li><strong>&ldquo;Other people&rsquo;s money.&rdquo;</strong> When an insurer pays the bill, the buyer barely registers the price.</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="col narrow">
+      <div class="def"><dt>The markup rule</dt><dd>At the profit-maximizing quantity, the proportional markup is the reciprocal of the elasticity of demand.<span class="eq">(P &minus; MC) / P = 1 / |e|</span></dd></div>
+      <p class="figcap">Combivir&rsquo;s $12.50 price on a $2.50 average cost implies an elasticity of just <strong>1.25</strong> &mdash; demand barely more elastic than the point where a monopolist stops raising price at all.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: elasticity">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag elasticity</span></div>
+  <h2 class="stitle">Rotate the demand curve, watch the markup</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-elas" role="img" aria-label="A demand curve rotating about the profit-maximizing quantity as elasticity changes, with the resulting monopoly price and the markup over marginal cost."></svg>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-e">Elasticity of demand |e|</label>
+          <span class="val" id="s-e-val">1.25</span>
+          <input type="range" id="s-e" min="1.15" max="5" step="0.05" value="1.25" aria-label="Elasticity of demand">
+        </div>
+        <dl class="readout">
+          <dt>Monopoly price</dt><dd id="r-pe">&mdash;</dd>
+          <dt>Marginal cost</dt><dd class="mono">$2.50</dd>
+          <dt>Markup over MC</dt><dd id="r-mk">&mdash;</dd>
+          <dt>(P &minus; MC) / P</dt><dd id="r-lerner">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-elas" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part IV">
+  <span class="num">PART FOUR</span>
+  <h2>What monopoly costs</h2>
+  <p>Higher prices and smaller output mean trades that would have made both sides better off simply never happen.</p>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: deadweight loss">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag quantity</span></div>
+  <h2 class="stitle">The sales that never happen</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-dwl" role="img" aria-label="Demand and marginal cost with the monopoly quantity marked; the triangle between the monopoly quantity and the competitive quantity is the deadweight loss."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--brine)"></i>Consumer surplus</span><span><i class="swatch" style="background:var(--gain)"></i>Producer surplus</span><span><i class="swatch swatch-hatch"></i>Deadweight loss</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-qd">Pills, millions</label>
+          <span class="val" id="s-qd-val">80</span>
+          <input type="range" id="s-qd" min="80" max="160" step="2" value="80" aria-label="Quantity between monopoly and competitive output">
+        </div>
+        <dl class="readout">
+          <dt>Price</dt><dd id="r-pd">&mdash;</dd>
+          <dt>Consumer surplus</dt><dd id="r-cs">&mdash;</dd>
+          <dt>Producer surplus</dt><dd id="r-ps">&mdash;</dd>
+          <dt>Total surplus</dt><dd id="r-ts">&mdash;</dd>
+          <dt>Deadweight loss</dt><dd id="r-dwl">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-dwl" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Corruption">
+  <div class="eyebrow"><span>The costs of monopoly</span><span class="q">Corruption &amp; inefficiency</span></div>
+  <h2 class="stitle">Many monopolies exist to move wealth, not to make anything</h2>
+  <div class="content">
+    <div class="col">
+      <div class="qcard"><span class="n">INDONESIA</span><h3>The clove monopoly</h3><p>The president&rsquo;s son, Tommy Suharto, was handed the national monopoly on cloves &mdash; and spent the proceeds on Lamborghinis. No new product, no lower cost; just a transfer to someone politically connected.</p></div>
+    </div>
+    <div class="col">
+      <div class="qcard"><span class="n">ALGERIA</span><h3>&ldquo;General Wheat,&rdquo; &ldquo;General Tire&rdquo;</h3><p>Army generals each controlled a key input. Monopolies on <em>inputs to other goods</em> are especially damaging: every general grabs a bigger slice while the whole pie shrinks.</p></div>
+    </div>
+  </div>
+  <p class="figcap">This is the part of monopoly that has no offsetting benefit at all &mdash; no innovation bought, no scale economy captured.</p>
+</section>
+
+<section class="slide divider" data-label="Part V">
+  <span class="num">PART FIVE</span>
+  <h2>Where market power comes from</h2>
+  <p>Four big sources: economies of scale, barriers to entry, network effects, and innovation.</p>
+</section>
+
+<section class="slide" data-pad="tight" data-figs="pair" data-label="Live: natural monopoly">
+  <div class="eyebrow"><span>Sources</span><span class="q">Economies of scale</span></div>
+  <h2 class="stitle">When splitting the market just duplicates the cost</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-nat" role="img" aria-label="An average cost curve that falls across the whole market, with markers showing each firm's output and average cost as the market is split between more firms."></svg>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-n">Firms splitting the market</label>
+          <span class="val" id="s-n-val">1</span>
+          <input type="range" id="s-n" min="1" max="5" step="1" value="1" aria-label="Number of firms splitting the market">
+        </div>
+        <dl class="readout">
+          <dt>Output per firm</dt><dd id="r-qf">&mdash;</dd>
+          <dt>Average cost</dt><dd id="r-ac">&mdash;</dd>
+          <dt>Total industry cost</dt><dd id="r-ic">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-nat" data-tone="flat">&mdash;</div>
+      <div class="def"><dt>Natural monopoly</dt><dd>One firm can supply the whole market at lower cost than two or more could &mdash; water, natural gas, cable TV.</dd></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Barriers and networks">
+  <div class="eyebrow"><span>Sources</span><span class="q">Barriers, networks, innovation</span></div>
+  <h2 class="stitle">Three more ways to keep rivals out</h2>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Barriers to entry</dt><dd>Factors that raise the cost for new firms to enter an industry &mdash; hard-to-duplicate inputs, brands and trademarks, or an entrenched relationship with the market, like the TI-84 calculator.</dd></div>
+      <div class="def"><dt>Network effects</dt><dd>The product gets more valuable as more people use it. Facebook (everyone wants to be where their friends are); credit cards (buyers want acceptance, merchants want users).</dd></div>
+    </div>
+    <div class="col">
+      <div class="def"><dt>Innovation</dt><dd>Products rivals cannot immediately copy.</dd></div>
+      <p class="lede">The trade-off in one sentence: iPhones cost more than they would under stronger competition &mdash; but Apple would not innovate as hard without the prospect of monopoly profits.</p>
+      <p class="figcap">Hold onto that sentence. It is the same bargain the patent system makes, and the one the next section has to price.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Sources table">
+  <div class="eyebrow"><span>Sources</span><span class="q">At a glance</span></div>
+  <h2 class="stitle">Where market power actually comes from</h2>
+  <table class="srctbl">
+    <thead><tr><th>Source of market power</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td>Patents</td><td>GSK&rsquo;s patent on Combivir</td></tr>
+      <tr><td>Laws preventing entry</td><td>Indonesian cloves, Algerian wheat, the U.S. Postal Service</td></tr>
+      <tr><td>Economies of scale</td><td>Subways, cable TV, electricity transmission, highways</td></tr>
+      <tr><td>Hard-to-duplicate inputs</td><td>Oil, diamonds, Rolex watches</td></tr>
+      <tr><td>Innovation</td><td>Apple&rsquo;s iPhone, Mathematica, eBay</td></tr>
+      <tr><td>Copyright</td><td>Novels, movies, music, software</td></tr>
+      <tr><td>Network effects</td><td>Twitter, Amazon, credit cards</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="slide" data-label="R and D">
+  <div class="eyebrow"><span>The benefit</span><span class="q">R&amp;D incentives</span></div>
+  <h2 class="stitle">What the deadweight loss buys</h2>
+  <div class="content">
+    <div class="col">
+      <ul class="body">
+        <li>Developing a new drug costs <strong>over $1 billion</strong>. Patents &mdash; temporary monopolies &mdash; are one way to reward that spending.</li>
+        <li>Drug prices are lower in India (weak patents) and Canada (price controls). But if <em>nobody</em> grants patent profits, fewer new drugs get developed at all.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="defs">
+        <div class="def"><dt>Prizes</dt><dd>Reward the R&amp;D directly, without creating a monopoly at all.</dd></div>
+        <div class="def"><dt>Patent buyouts</dt><dd>Government buys the patent and releases it, cutting the price without cutting the R&amp;D reward &mdash; though it must raise taxes to pay, and pricing a patent correctly is hard.</dd></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Regulation">
+  <div class="eyebrow"><span>Policy</span><span class="q">Regulating monopoly</span></div>
+  <h2 class="stitle">Three levers, each with a catch</h2>
+  <div class="qcards">
+    <div class="qcard"><span class="n">LEVER 1</span><h3>Price controls</h3><p>Unlike in a competitive market, a well-placed price ceiling on a monopoly can <em>increase</em> output and consumer surplus. The catch: it dulls the incentive to innovate.</p></div>
+    <div class="qcard"><span class="n">LEVER 2</span><h3>Government ownership</h3><p>About 3,000 U.S. electric utilities &mdash; two-thirds government-owned, the rest heavily regulated &mdash; delivered cheap power for decades. The catch: without competition or a profit motive, inefficiency creeps in; and without regulation, providers exploit their power (California, 2000).</p></div>
+    <div class="qcard"><span class="n">LEVER 3</span><h3>Antitrust law</h3><p>The Sherman Act (1890) and Clayton Act (1914) let government break up monopolies, block mergers, and stop anticompetitive acts. The catch: bigger firms bring scale efficiencies <em>and</em> more market power &mdash; regulators must weigh lower costs against higher prices.</p></div>
+  </div>
+</section>
+
+<section class="slide" data-label="Takeaway">
+  <div class="eyebrow"><span>Takeaway</span></div>
+  <h2 class="stitle">What to carry out of Chapter 13</h2>
+  <div class="takes">
+    <div class="take"><h3>MR &lt; P</h3><p>A monopolist faces downward-sloping demand, so selling more means cutting price on every unit. It produces where <em>MR = MC</em> and prices off the demand curve.</p></div>
+    <div class="take"><h3>The cost</h3><p>Monopolies charge more, produce less, and shrink total surplus &mdash; a <em>deadweight loss</em>. The more inelastic the demand, the bigger the markup.</p></div>
+    <div class="take"><h3>The bargain</h3><p>Patents trade deadweight loss for <em>innovation</em>; natural monopolies trade it for <em>economies of scale</em>. Neither trade is free.</p></div>
+    <div class="take"><h3>The policy</h3><p>Price controls, public ownership and antitrust can all help &mdash; but the practice is far messier than the theory.</p></div>
+    <div class="take"><h3>The warning</h3><p>Many monopolies exist for no economic reason at all &mdash; simply to <em>transfer wealth</em> to politically powerful elites.</p></div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Key terms">
+  <div class="eyebrow"><span>Reference</span><span class="q">Key terms</span></div>
+  <h2 class="stitle">Key terms at a glance</h2>
+  <div class="terms">
+    <div class="term"><b>Market power</b><span>Ability to price above MC without inviting entry.</span></div>
+    <div class="term"><b>Monopoly</b><span>A firm with market power.</span></div>
+    <div class="term"><b>MR &lt; P</b><span>Selling more requires cutting price on all units, so MR lies below demand &mdash; at twice the slope.</span></div>
+    <div class="term"><b>Monopoly rule</b><span>Produce where MR = MC; charge the demand-curve price at that Q.</span></div>
+    <div class="term"><b>Markup &amp; elasticity</b><span>More inelastic demand &rarr; larger markup over MC.</span></div>
+    <div class="term"><b>Monopoly DWL</b><span>Lost surplus from units between Q<sub>m</sub> and Q<sub>c</sub> that never get made.</span></div>
+    <div class="term"><b>Natural monopoly</b><span>One firm serves the market more cheaply than two, because AC keeps falling.</span></div>
+    <div class="term"><b>Antitrust</b><span>Sherman (1890) &amp; Clayton (1914): break up, block mergers, stop anticompetitive acts.</span></div>
+  </div>
+</section>
+
+    </div>
+  </div>
+  <nav class="nav" aria-label="Slide navigation">
+    <button class="navbtn" id="prev" aria-label="Previous slide">&#8249;</button>
+    <button class="navbtn" id="next" aria-label="Next slide">&#8250;</button>
+    <div class="rail" id="rail" role="tablist" aria-label="Slides"></div>
+    <span class="counter" id="counter">1 / 1</span>
+    <span class="hint">&#8592; &#8594; to move &#183; drag any slider</span>
+  </nav>
+</div>
+
+<script>
+(function(){
+"use strict";
+var NS="http://www.w3.org/2000/svg";
+function E(n,a,t){var e=document.createElementNS(NS,n);for(var k in a){if(a[k]!==null&&a[k]!==undefined)e.setAttribute(k,a[k]);}if(t!==undefined)e.textContent=t;return e;}
+function C(n){return "var("+n+")";}
+function money(v,d){return "$"+Number(v).toFixed(d===undefined?2:d);}
+var MINUS="\u2212";
+function signed(v,d){return v<0?MINUS+money(-v,d):money(v,d);}
+
+function Frame(svg,o){
+  var W=o.W||440,H=o.H||300,L=(o.L===undefined?50:o.L),R=(o.R===undefined?16:o.R),T=(o.T===undefined?16:o.T),B=(o.B===undefined?40:o.B);
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  var x0=o.x0||0,x1=o.x1,y0=(o.y0===undefined?0:o.y0),y1=o.y1;
+  var f={svg:svg,W:W,H:H,x0:x0,x1:x1,y0:y0,y1:y1,
+    x:function(v){return L+(v-x0)/(x1-x0)*(W-L-R);},
+    y:function(v){return H-B-(v-y0)/(y1-y0)*(H-T-B);},
+    add:function(e){svg.appendChild(e);return e;}};
+  f.left=L; f.right=W-R; f.top=T; f.bottom=H-B;
+  f.add(E("path",{d:"M"+L+" "+T+" L"+L+" "+(H-B)+" L"+(W-R)+" "+(H-B),fill:"none",stroke:C("--rule"),"stroke-width":1.2}));
+  if(o.xlabel)f.add(E("text",{x:(L+W-R)/2,y:H-6,fill:C("--ink-faint"),"font-size":11,"text-anchor":"middle","font-family":"'Source Sans 3',sans-serif"},o.xlabel));
+  if(o.ylabel)f.add(E("text",{x:-(T+H-B)/2,y:13,fill:C("--ink-faint"),"font-size":11,"text-anchor":"middle",transform:"rotate(-90)","font-family":"'Source Sans 3',sans-serif"},o.ylabel));
+  return f;
+}
+function line(f,ax,ay,bx,by,stroke,w,dash){return f.add(E("line",{x1:f.x(ax),y1:f.y(ay),x2:f.x(bx),y2:f.y(by),stroke:stroke,"stroke-width":w||2,"stroke-dasharray":dash||null,"stroke-linecap":"round"}));}
+function curve(f,fn,a,b,stroke,w,dash){
+  var d="",i,q,v;
+  for(i=0;i<=140;i++){q=a+(b-a)*i/140; v=fn(q); if(!isFinite(v)||v>f.y1||v<f.y0){d="";continue;} d+=(d===""?"M":"L")+f.x(q).toFixed(2)+" "+f.y(v).toFixed(2);}
+  return f.add(E("path",{d:d,fill:"none",stroke:stroke,"stroke-width":w||2,"stroke-linejoin":"round","stroke-dasharray":dash||null}));
+}
+function lab(f,px,py,txt,fill,size,anchor){return f.add(E("text",{x:px,y:py,fill:fill,"font-size":size||11,"text-anchor":anchor||"start","font-weight":600,"font-family":"'IBM Plex Mono',monospace"},txt));}
+function cross(f,qx,py){
+  f.add(E("path",{d:"M"+f.x(qx)+" "+f.bottom+" L"+f.x(qx)+" "+f.y(py),stroke:C("--crude"),"stroke-width":1.1,"stroke-dasharray":"3 3",fill:"none"}));
+  f.add(E("path",{d:"M"+f.left+" "+f.y(py)+" L"+f.x(qx)+" "+f.y(py),stroke:C("--crude"),"stroke-width":1.1,"stroke-dasharray":"3 3",fill:"none"}));
+  f.add(E("circle",{cx:f.x(qx),cy:f.y(py),r:3.6,fill:C("--crude")}));
+}
+function xticks(f,v,fmt){v.forEach(function(t){
+  f.add(E("line",{x1:f.x(t),x2:f.x(t),y1:f.bottom,y2:f.bottom+4,stroke:C("--rule"),"stroke-width":1}));
+  f.add(E("text",{x:f.x(t),y:f.bottom+15,fill:C("--ink-faint"),"font-size":10,"text-anchor":"middle","font-family":"'IBM Plex Mono',monospace"},fmt?fmt(t):String(t)));});}
+function yticks(f,v,fmt){v.forEach(function(t){
+  f.add(E("line",{x1:f.left-4,x2:f.left,y1:f.y(t),y2:f.y(t),stroke:C("--rule"),"stroke-width":1}));
+  f.add(E("text",{x:f.left-7,y:f.y(t)+3.4,fill:C("--ink-faint"),"font-size":10,"text-anchor":"end","font-family":"'IBM Plex Mono',monospace"},fmt?fmt(t):String(t)));});}
+function hatchDefs(f){
+  var d=E("defs"),p=E("pattern",{id:"dwlhatch",width:6,height:6,patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"});
+  p.appendChild(E("rect",{width:6,height:6,fill:C("--loss-fill")}));
+  p.appendChild(E("line",{x1:0,y1:0,x2:0,y2:6,stroke:C("--loss"),"stroke-width":1.6,opacity:.75}));
+  d.appendChild(p); f.add(d);
+}
+function V(id,tone,html){var e=document.getElementById(id); if(!e)return; e.dataset.tone=tone; e.innerHTML=html;}
+
+/* ============ linear demand for the revenue table: P = 20 - 2Q ============ */
+function dA(q){return 20-2*q;}
+function trA(q){return dA(q)*q;}
+function mrLineA(q){return 20-4*q;}
+
+function buildRevTable(){
+  var h='<table class="tbl"><thead><tr><th>Q</th><th>P ($)</th><th>TR = P &times; Q</th><th>MR = &Delta;TR</th></tr></thead><tbody>';
+  for(var q=1;q<=6;q++){
+    var mr=trA(q)-trA(q-1);
+    h+='<tr data-q="'+q+'"><td>'+q+'</td><td>'+dA(q)+'</td><td>'+trA(q)+'</td><td>'+(mr<0?MINUS+Math.abs(mr):mr)+'</td></tr>';
+  }
+  document.getElementById("tbl-rev").innerHTML=h+'</tbody></table>';
+}
+function syncRev(q){
+  var rows=document.querySelectorAll('#tbl-rev tr[data-q]');
+  for(var i=0;i<rows.length;i++)rows[i].className=(+rows[i].dataset.q===q)?"hi":"";
+  var p=dA(q), mr=trA(q)-trA(q-1);
+  document.getElementById("r-p").textContent=money(p,0);
+  document.getElementById("r-tr").textContent=money(trA(q),0);
+  document.getElementById("r-mr").textContent=signed(mr,0);
+  document.getElementById("r-gap").textContent=money(p-mr,0);
+  if(q===1)V("v-rev","flat","<strong>The first unit is the exception.</strong> With nothing sold yet there is no earlier price to give up, so MR equals the price.");
+  else if(mr>0)V("v-rev","gain","<strong>Still adding revenue, but less than the price.</strong> Selling unit "+q+" required dropping the price to $"+p+" on <em>all</em> "+q+" units, so only "+money(mr,0)+" sticks.");
+  else V("v-rev","loss","<strong>Past the peak.</strong> Unit "+q+" brings in $"+p+", but the price cut costs more than that on the units already being sold &mdash; total revenue actually <em>falls</em>.");
+}
+
+function drawDMR(q){
+  var svg=document.getElementById("fig-dmr"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,x1:10.5,y0:-6,y1:21,xlabel:"Quantity",ylabel:"Price / revenue per unit ($)"});
+  f.add(E("line",{x1:f.left,x2:f.right,y1:f.y(0),y2:f.y(0),stroke:C("--rule"),"stroke-width":1}));
+  yticks(f,[0,10,20],function(v){return "$"+v;});
+  xticks(f,[2,4,6,8,10]);
+  line(f,0,20,10,0,C("--ink-soft"),2.2);
+  line(f,0,20,6.5,-6,C("--brine"),2.2);
+  lab(f,f.x(9.4),f.y(dA(9.4))-7,"D",C("--ink-soft"),12,"middle");
+  lab(f,f.x(6.1),f.y(mrLineA(6.1))-7,"MR",C("--brine"),12,"middle");
+  f.add(E("circle",{cx:f.x(0),cy:f.y(20),r:3.2,fill:C("--ink-soft")}));
+  lab(f,f.x(0.25),f.y(20)-7,"same intercept",C("--ink-faint"),10,"start");
+  var p=dA(q), m=mrLineA(q);
+  f.add(E("line",{x1:f.x(q),x2:f.x(q),y1:f.y(p),y2:f.y(m),stroke:C("--crude"),"stroke-width":3}));
+  cross(f,q,p);
+  f.add(E("circle",{cx:f.x(q),cy:f.y(m),r:3.2,fill:C("--brine")}));
+  lab(f,f.x(q)+7,(f.y(p)+f.y(m))/2+3.5,"P "+MINUS+" MR = "+money(p-m,2),C("--crude"),10.5,"start");
+  document.getElementById("r-p2").textContent=money(p,2);
+  document.getElementById("r-mr2").textContent=signed(m,2);
+  document.getElementById("r-tr2").textContent=money(trA(q),2);
+  if(m>0.01)V("v-dmr","gain","<strong>MR is positive but below price.</strong> The orange bar is what the firm gives up by cutting the price on units it was already selling.");
+  else if(Math.abs(m)<=0.01)V("v-dmr","flat","<strong>MR = 0.</strong> Total revenue is at its maximum ("+money(trA(q),2)+"). Demand is unit elastic right here.");
+  else V("v-dmr","loss","<strong>MR is negative.</strong> Past this point, selling another unit <em>reduces</em> total revenue. A monopolist never operates here.");
+}
+
+/* ============ Combivir: P = 22.5 - 0.125Q, MR = 22.5 - 0.25Q, MC = AC = 2.50 ============ */
+var MC=2.5, QM=80, PM=12.5, QC=160, TSC=1600;
+function dC(q){return 22.5-0.125*q;}
+function mrC(q){return 22.5-0.25*q;}
+
+function drawMono(q){
+  var svg=document.getElementById("fig-mono"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,x1:172,y1:24,xlabel:"Pills (millions)",ylabel:"Dollars per pill"});
+  var p=dC(q), m=mrC(q), prof=(p-MC)*q;
+  f.add(E("rect",{x:f.x(0),y:f.y(Math.max(p,MC)),width:f.x(q)-f.x(0),height:Math.abs(f.y(Math.min(p,MC))-f.y(Math.max(p,MC))),
+    fill:p>=MC?C("--gain-fill"):C("--loss-fill"),stroke:p>=MC?C("--gain"):C("--loss"),"stroke-width":1.2}));
+  yticks(f,[5,10,15,20],function(v){return "$"+v;});
+  xticks(f,[40,80,120,160]);
+  line(f,0,22.5,170,dC(170),C("--ink-soft"),2.2);
+  line(f,0,22.5,90,0,C("--brine"),2.2);
+  f.add(E("line",{x1:f.left,x2:f.right,y1:f.y(MC),y2:f.y(MC),stroke:C("--loss"),"stroke-width":2.2}));
+  lab(f,f.x(132),f.y(dC(132))-8,"D",C("--ink-soft"),12,"middle");
+  lab(f,f.x(50),f.y(mrC(50))-8,"MR",C("--brine"),12,"middle");
+  lab(f,f.left+5,f.y(MC)-7,"MC = AC = $2.50",C("--loss"),10.5,"start");
+  cross(f,q,p);
+  f.add(E("circle",{cx:f.x(q),cy:f.y(Math.max(m,0)),r:3,fill:C("--brine")}));
+  document.getElementById("r-pm").textContent=money(p,2);
+  document.getElementById("r-mrm").textContent=signed(m,2);
+  document.getElementById("r-ppp").textContent=signed(p-MC,2);
+  document.getElementById("r-tp").textContent=(prof<0?MINUS:"")+"$"+Math.abs(prof).toFixed(0)+"M";
+  if(Math.abs(q-QM)<=1.5)V("v-mono","flat","<strong>This is the monopoly point.</strong> MR = MC at 80 million pills, the price off demand is $12.50, and profit is $10.00 &times; 80M = <strong>$800 million</strong>.");
+  else if(m>MC)V("v-mono","gain","<strong>Expand.</strong> The next pill adds "+money(m,2)+" in revenue and costs only $2.50 &mdash; profit is still rising.");
+  else V("v-mono","loss","<strong>Too far.</strong> MR is down to "+signed(m,2)+", below the $2.50 cost. Each extra pill now shrinks profit, because the price cut applies to all "+q.toFixed(0)+" million.");
+}
+
+function drawElas(e){
+  var svg=document.getElementById("fig-elas"); if(!svg)return;
+  var P=MC/(1-1/e), A=2*P-MC, B=(P-MC)/QM;
+  var f=Frame(svg,{W:520,H:300,x1:172,y1:30,xlabel:"Pills (millions)",ylabel:"Dollars per pill"});
+  yticks(f,[5,10,15,20,25],function(v){return "$"+v;});
+  xticks(f,[40,80,120,160]);
+  var qdEnd=Math.min(170,A/B);
+  line(f,0,A,qdEnd,A-B*qdEnd,C("--ink-soft"),2.2);
+  line(f,0,A,Math.min(170,A/(2*B)),Math.max(0,A-2*B*Math.min(170,A/(2*B))),C("--brine"),2.2);
+  f.add(E("line",{x1:f.left,x2:f.right,y1:f.y(MC),y2:f.y(MC),stroke:C("--loss"),"stroke-width":2.2}));
+  lab(f,f.left+5,f.y(MC)-7,"MC = $2.50",C("--loss"),10.5,"start");
+  f.add(E("line",{x1:f.x(QM),x2:f.x(QM),y1:f.y(MC),y2:f.y(P),stroke:C("--crude"),"stroke-width":4}));
+  lab(f,f.x(QM)+8,(f.y(MC)+f.y(P))/2+3.5,"markup "+money(P-MC,2),C("--crude"),10.5,"start");
+  cross(f,QM,P);
+  lab(f,f.x(QM),f.y(P)-11,"Q* = 80M",C("--crude"),10.5,"middle");
+  document.getElementById("r-pe").textContent=money(P,2);
+  document.getElementById("r-mk").textContent=(P/MC).toFixed(2)+"x MC";
+  document.getElementById("r-lerner").textContent=(1/e).toFixed(3);
+  if(e<=1.3)V("v-elas","loss","<strong>Very inelastic.</strong> Buyers barely respond to price, so the firm can hold a "+ (P/MC).toFixed(1) +"x markup. This is where Combivir sits &mdash; the &ldquo;can&rsquo;t take it with you&rdquo; and &ldquo;other people&rsquo;s money&rdquo; effects at work.");
+  else if(e<2.5)V("v-elas","flat","<strong>Moderately elastic.</strong> Buyers now walk away as price rises, so the sustainable markup falls to "+(P/MC).toFixed(1)+"x.");
+  else V("v-elas","gain","<strong>Fairly elastic.</strong> With buyers this price-sensitive, the monopoly price sits close to marginal cost &mdash; market power exists, but it is worth little.");
+}
+
+function drawDWL(q){
+  var svg=document.getElementById("fig-dwl"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,x1:175,y1:24,xlabel:"Pills (millions)",ylabel:"Dollars per pill"});
+  hatchDefs(f);
+  var p=dC(q), cs=0.0625*q*q, ps=(p-MC)*q, ts=cs+ps, dwl=TSC-ts;
+  f.add(E("path",{d:"M"+f.x(0)+" "+f.y(22.5)+" L"+f.x(q)+" "+f.y(p)+" L"+f.x(0)+" "+f.y(p)+" Z",fill:C("--brine"),opacity:.26,stroke:C("--brine"),"stroke-width":1.1}));
+  f.add(E("rect",{x:f.x(0),y:f.y(p),width:f.x(q)-f.x(0),height:f.y(MC)-f.y(p),fill:C("--gain-fill"),stroke:C("--gain"),"stroke-width":1.1}));
+  if(q<QC-0.5)f.add(E("path",{d:"M"+f.x(q)+" "+f.y(p)+" L"+f.x(QC)+" "+f.y(MC)+" L"+f.x(q)+" "+f.y(MC)+" Z",fill:"url(#dwlhatch)",stroke:C("--loss"),"stroke-width":1.1}));
+  if(q>18){
+    lab(f,f.x(q*0.34),f.y(p+(22.5-p)*0.34)+4,"CS",C("--brine"),11.5,"middle");
+    if(p-MC>2.4)lab(f,f.x(q*0.5),(f.y(p)+f.y(MC))/2+4,"PS",C("--gain"),11.5,"middle");
+  }
+  if(q<QC-14)lab(f,f.x((q+QC)/2+6),(f.y(MC)+f.y((p+MC)/2))/2,"DWL",C("--loss"),11.5,"middle");
+  yticks(f,[5,10,15,20],function(v){return "$"+v;});
+  xticks(f,[40,80,120,160]);
+  line(f,0,22.5,175,dC(175),C("--ink-soft"),2.2);
+  f.add(E("line",{x1:f.left,x2:f.right,y1:f.y(MC),y2:f.y(MC),stroke:C("--loss"),"stroke-width":2.2}));
+  lab(f,f.x(120),f.y(dC(120))-8,"D",C("--ink-soft"),12,"middle");
+  lab(f,f.left+5,f.y(MC)-7,"MC",C("--loss"),10.5,"start");
+  f.add(E("line",{x1:f.x(QC),x2:f.x(QC),y1:f.y(MC),y2:f.top,stroke:C("--ink-faint"),"stroke-width":1,"stroke-dasharray":"3 3"}));
+  lab(f,f.x(QC),f.top+11,"Qc = 160M",C("--ink-faint"),10,"middle");
+  cross(f,q,p);
+  document.getElementById("r-pd").textContent=money(p,2);
+  document.getElementById("r-cs").textContent="$"+cs.toFixed(0)+"M";
+  document.getElementById("r-ps").textContent="$"+ps.toFixed(0)+"M";
+  document.getElementById("r-ts").textContent="$"+ts.toFixed(0)+"M";
+  document.getElementById("r-dwl").textContent="$"+dwl.toFixed(0)+"M";
+  if(q<=QM+1)V("v-dwl","loss","<strong>The monopoly outcome.</strong> 80 million pills at $12.50. Producer surplus is $800M, but $400M of surplus simply vanishes &mdash; pills worth more to patients than the $2.50 they cost to make, never made.");
+  else if(q>=QC-1)V("v-dwl","gain","<strong>The competitive outcome.</strong> Price has fallen to marginal cost, every worthwhile pill gets made, and the deadweight loss is zero. Total surplus is $1,600M &mdash; all of it consumer surplus.");
+  else V("v-dwl","flat","<strong>Partway there.</strong> Every extra pill converts a slice of deadweight loss into surplus. Notice producer surplus falling even as total surplus rises &mdash; that is why the monopolist stops at 80M.");
+}
+
+/* ============ natural monopoly: AC(q) = 900/q + 1, market = 300 ============ */
+function acN(q){return 900/q+1;}
+function drawNat(n){
+  var svg=document.getElementById("fig-nat"); if(!svg)return;
+  var f=Frame(svg,{W:400,H:300,x1:330,y1:20,xlabel:"Output per firm",ylabel:"Average cost ($)"});
+  yticks(f,[5,10,15],function(v){return "$"+v;});
+  xticks(f,[100,200,300]);
+  curve(f,acN,55,325,C("--ink-soft"),2.2);
+  lab(f,f.x(300),f.y(acN(300))-9,"AC",C("--ink-soft"),12,"middle");
+  var qf=300/n, ac=acN(qf), ic=n*900+300;
+  for(var i=1;i<=n;i++){f.add(E("circle",{cx:f.x(qf),cy:f.y(ac),r:3+(i===1?1:0),fill:C("--crude"),opacity:i===1?1:.45}));}
+  cross(f,qf,ac);
+  lab(f,f.x(qf)+7,f.y(ac)-9,n+(n===1?" firm":" firms")+" @ "+qf.toFixed(0),C("--crude"),10.5,"start");
+  document.getElementById("r-qf").textContent=qf.toFixed(0)+" units";
+  document.getElementById("r-ac").textContent=money(ac,2);
+  document.getElementById("r-ic").textContent="$"+ic.toLocaleString();
+  if(n===1)V("v-nat","gain","<strong>One firm is cheapest.</strong> A single producer spreads the fixed cost over all 300 units, so average cost is only $4.00 and the industry spends $1,200.");
+  else V("v-nat","loss","<strong>Splitting duplicates the fixed cost.</strong> Each of the "+n+" firms rebuilds the same infrastructure, so average cost climbs to "+money(ac,2)+" and the industry now spends $"+ic.toLocaleString()+" to make the same 300 units.");
+}
+
+/* ---------------- wiring ---------------- */
+function on(id,fn){var e=document.getElementById(id); if(e)e.addEventListener("input",fn);}
+buildRevTable();
+on("s-q",function(e){var q=+e.target.value;document.getElementById("s-q-val").textContent=q;syncRev(q);});
+syncRev(1);
+on("s-q2",function(e){var q=+e.target.value;document.getElementById("s-q2-val").textContent=q;drawDMR(q);});
+drawDMR(1);
+on("s-qm",function(e){var q=+e.target.value;document.getElementById("s-qm-val").textContent=q;drawMono(q);});
+drawMono(20);
+Array.prototype.forEach.call(document.querySelectorAll("[data-setq]"),function(b){
+  b.addEventListener("click",function(){var q=+b.dataset.setq,s=document.getElementById("s-qm");
+    s.value=q; document.getElementById("s-qm-val").textContent=q; drawMono(q);});});
+on("s-e",function(e){var v=+e.target.value;document.getElementById("s-e-val").textContent=v.toFixed(2);drawElas(v);});
+drawElas(1.25);
+on("s-qd",function(e){var q=+e.target.value;document.getElementById("s-qd-val").textContent=q;drawDWL(q);});
+drawDWL(80);
+on("s-n",function(e){var n=+e.target.value;document.getElementById("s-n-val").textContent=n;drawNat(n);});
+drawNat(1);
+
+var slides=Array.prototype.slice.call(document.querySelectorAll(".slide"));
+var rail=document.getElementById("rail"), counter=document.getElementById("counter"), cur=0;
+slides.forEach(function(s,i){
+  var b=document.createElement("button"); b.type="button"; b.setAttribute("role","tab");
+  b.setAttribute("aria-label","Slide "+(i+1)+": "+(s.dataset.label||"")); b.title=(i+1)+". "+(s.dataset.label||"");
+  b.addEventListener("click",function(){go(i);}); rail.appendChild(b);
+});
+function go(i){
+  cur=Math.max(0,Math.min(slides.length-1,i));
+  slides.forEach(function(s,j){s.classList.toggle("on",j===cur);});
+  Array.prototype.forEach.call(rail.children,function(b,j){b.setAttribute("aria-current",j===cur?"true":"false");});
+  counter.textContent=(cur+1)+" / "+slides.length;
+}
+document.getElementById("prev").addEventListener("click",function(){go(cur-1);});
+document.getElementById("next").addEventListener("click",function(){go(cur+1);});
+document.addEventListener("keydown",function(e){
+  var t=e.target.tagName;
+  if(t==="INPUT"&&e.target.type==="text")return;
+  if(t==="INPUT"&&e.target.type==="range"&&(e.key==="ArrowLeft"||e.key==="ArrowRight"))return;
+  if(e.key==="ArrowRight"||e.key==="PageDown"||e.key===" "){go(cur+1);e.preventDefault();}
+  else if(e.key==="ArrowLeft"||e.key==="PageUp"){go(cur-1);e.preventDefault();}
+  else if(e.key==="Home")go(0); else if(e.key==="End")go(slides.length-1);
+});
+go(0);
+})();
+</script>
+
+</body></html>
