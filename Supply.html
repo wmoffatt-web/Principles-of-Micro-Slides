@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Supply and Equilibrium</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ink:#16211E; --ink-soft:#44544F; --ink-faint:#7C8C87;
+  --paper:#F2F4F3; --surface:#FFFFFF; --surface-2:#E7EBE9;
+  --rule:#CBD4D1; --rule-soft:#DFE5E3;
+  --crude:#C47418; --crude-soft:#F0DCBE;
+  --brine:#3F7A72; --brine-soft:#D7E6E3;
+  --gain:#2E7D52; --gain-fill:rgba(46,125,82,.16);
+  --loss:#B5432F; --loss-fill:rgba(181,67,47,.16);
+  --stage:#FFFFFF; --shadow:0 1px 2px rgba(22,33,30,.06),0 10px 34px rgba(22,33,30,.10);
+}
+:root:not([data-theme="light"]) { color-scheme: light dark; }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#E7EDEA; --ink-soft:#A6B5B0; --ink-faint:#74857F;
+    --paper:#0E1A17; --surface:#16241F; --surface-2:#1E302A;
+    --rule:#2E443D; --rule-soft:#243730;
+    --crude:#E0A050; --crude-soft:#3B2E18;
+    --brine:#7FB8AF; --brine-soft:#1B312D;
+    --gain:#5FBE8A; --gain-fill:rgba(95,190,138,.18);
+    --loss:#E2836C; --loss-fill:rgba(226,131,108,.18);
+    --stage:#13201C; --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 40px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#E7EDEA; --ink-soft:#A6B5B0; --ink-faint:#74857F;
+  --paper:#0E1A17; --surface:#16241F; --surface-2:#1E302A;
+  --rule:#2E443D; --rule-soft:#243730;
+  --crude:#E0A050; --crude-soft:#3B2E18;
+  --brine:#7FB8AF; --brine-soft:#1B312D;
+  --gain:#5FBE8A; --gain-fill:rgba(95,190,138,.18);
+  --loss:#E2836C; --loss-fill:rgba(226,131,108,.18);
+  --stage:#13201C; --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 40px rgba(0,0,0,.45);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Sans 3",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  margin:0; min-height:100vh; display:flex; flex-direction:column;
+}
+h1,h2,h3{font-family:Spectral,Georgia,"Times New Roman",serif; font-weight:600; text-wrap:balance; margin:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+/* ---------- shell ---------- */
+.shell{flex:1; display:flex; flex-direction:column; min-height:0; padding:14px 16px 0}
+.stagewrap{flex:1; display:flex; align-items:center; justify-content:center; min-height:0}
+.stage{
+  container-type:inline-size;
+  width:100%; max-width:min(1420px, calc((100vh - 118px) * 16 / 9)); aspect-ratio:16/9;
+  background:var(--stage); border:1px solid var(--rule-soft); border-radius:3px;
+  box-shadow:var(--shadow); position:relative; overflow:hidden;
+}
+.slide{position:absolute; inset:0; padding:4.2cqi 5cqi 4.4cqi; display:none; flex-direction:column; gap:2.2cqi}
+.slide.on{display:flex}
+.slide[data-pad="tight"]{padding:3.2cqi 4cqi 3.4cqi; gap:1.6cqi}
+
+/* ---------- slide furniture ---------- */
+.eyebrow{
+  font-size:1.18cqi; letter-spacing:.17em; text-transform:uppercase; font-weight:700;
+  color:var(--crude); display:flex; gap:.9em; align-items:baseline;
+}
+.eyebrow .q{color:var(--ink-faint); letter-spacing:.17em}
+.stitle{font-size:4.1cqi; line-height:1.08; letter-spacing:-.01em}
+.slide[data-pad="tight"] .stitle{font-size:3.3cqi}
+.lede{font-size:2.05cqi; line-height:1.45; color:var(--ink-soft); max-width:46ch}
+.body{display:flex; flex-direction:column; gap:1.1cqi; font-size:1.95cqi; line-height:1.42}
+.body li{margin:0}
+ul.body{list-style:none; padding:0}
+ul.body li{position:relative; padding-left:1.5em}
+ul.body li::before{content:""; position:absolute; left:.2em; top:.62em; width:.5em; height:.5em; background:var(--crude); border-radius:50%}
+ul.body li ul{list-style:none; padding:.5em 0 0 0; display:flex; flex-direction:column; gap:.45em; font-size:.88em; color:var(--ink-soft)}
+ul.body li ul li::before{width:.42em; height:.42em; background:none; border:1px solid var(--brine); top:.55em}
+.content{flex:1; display:flex; gap:3cqi; min-height:0}
+.col{flex:1; display:flex; flex-direction:column; gap:1.6cqi; min-width:0}
+.col.narrow{flex:0 0 32cqi}
+.col.wide{flex:1.5}
+
+/* ---------- definition cards ---------- */
+.defs{display:flex; flex-direction:column; gap:1.3cqi}
+.defgrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.3cqi}
+.def{background:var(--surface-2); border-radius:2px; padding:1.5cqi 1.8cqi; display:flex; flex-direction:column; gap:.5cqi}
+.def dt{font-family:Spectral,Georgia,serif; font-weight:700; font-size:2cqi; color:var(--ink)}
+.def dd{margin:0; font-size:1.72cqi; line-height:1.38; color:var(--ink-soft)}
+.def .eq{font-family:"IBM Plex Mono",monospace; font-size:1.6cqi; color:var(--crude); font-weight:500; letter-spacing:.02em}
+
+.formula{margin:0; font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:2.9cqi; font-weight:500;
+  color:var(--ink); display:flex; align-items:baseline; gap:.75em; flex-wrap:wrap; font-variant-numeric:tabular-nums}
+.formula b{color:var(--crude); font-weight:600; font-size:1.18em; line-height:1}
+.formula small{font-family:"Source Sans 3",sans-serif; font-size:1.3cqi; letter-spacing:.14em;
+  text-transform:uppercase; font-weight:700; color:var(--ink-faint)}
+
+/* ---------- numbered question cards ---------- */
+.qcards{display:grid; grid-template-columns:repeat(3,1fr); gap:2cqi; flex:1; align-content:center}
+.qcard{display:flex; flex-direction:column; gap:1cqi; padding-top:1.4cqi; border-top:2px solid var(--crude)}
+.qcard .n{font-family:"IBM Plex Mono",monospace; font-size:1.3cqi; color:var(--crude); font-weight:600; letter-spacing:.14em}
+.qcard h3{font-size:2.5cqi; line-height:1.15}
+.qcard p{margin:0; font-size:1.72cqi; line-height:1.4; color:var(--ink-soft)}
+
+/* ---------- controls ---------- */
+.panel{background:var(--surface-2); border-radius:2px; padding:1.6cqi 1.8cqi; display:flex; flex-direction:column; gap:1.2cqi}
+.ctrl{display:flex; flex-direction:column; gap:.55cqi}
+.ctrl label{font-size:1.2cqi; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--ink-faint)}
+.ctrl .val{font-family:"IBM Plex Mono",monospace; font-size:2.6cqi; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums}
+input[type=range]{
+  -webkit-appearance:none; appearance:none; width:100%; height:1.5cqi; background:transparent; cursor:pointer; margin:0;
+}
+input[type=range]::-webkit-slider-runnable-track{height:.45cqi; background:var(--rule); border-radius:1px}
+input[type=range]::-moz-range-track{height:.45cqi; background:var(--rule); border-radius:1px}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:1.9cqi; height:1.9cqi; border-radius:50%; background:var(--crude);
+  border:.35cqi solid var(--stage); box-shadow:0 0 0 1px var(--crude); margin-top:-.75cqi;
+}
+input[type=range]::-moz-range-thumb{
+  width:1.9cqi; height:1.9cqi; border-radius:50%; background:var(--crude); border:.35cqi solid var(--stage); box-shadow:0 0 0 1px var(--crude);
+}
+input[type=range]:focus-visible{outline:2px solid var(--brine); outline-offset:4px}
+.readout{display:grid; grid-template-columns:auto 1fr; gap:.45cqi 1.2cqi; font-size:1.75cqi; align-items:baseline}
+.readout dt{color:var(--ink-faint); font-size:1.5cqi; letter-spacing:.06em}
+.readout dd{margin:0; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-weight:500}
+.verdict{font-size:1.85cqi; line-height:1.36; padding:1.1cqi 1.3cqi; border-radius:2px; background:var(--surface); color:var(--ink)}
+.verdict strong{font-family:Spectral,Georgia,serif}
+.verdict[data-tone="gain"]{box-shadow:inset 0 0 0 1px var(--gain); color:var(--ink)}
+.verdict[data-tone="loss"]{box-shadow:inset 0 0 0 1px var(--loss)}
+.verdict[data-tone="flat"]{box-shadow:inset 0 0 0 1px var(--crude)}
+.btnrow{display:flex; gap:.8cqi; flex-wrap:wrap}
+button.b{
+  font-family:"Source Sans 3",sans-serif; font-size:1.45cqi; font-weight:600; letter-spacing:.02em;
+  padding:.7cqi 1.3cqi; border-radius:2px; border:1px solid var(--rule); background:var(--surface);
+  color:var(--ink); cursor:pointer;
+}
+button.b:hover{border-color:var(--crude); color:var(--crude)}
+button.b[aria-pressed="true"]{background:var(--crude); border-color:var(--crude); color:#fff}
+:root[data-theme="dark"] button.b[aria-pressed="true"], :root:not([data-theme="light"]) button.b[aria-pressed="true"]{color:#14221D}
+button.b:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+
+/* ---------- figure ---------- */
+.fig{flex:1; display:flex; flex-direction:column; gap:.7cqi; min-height:0}
+.fig svg{width:100%; height:100%; display:block; flex:1; min-height:0; overflow:visible}
+.figcap{font-size:1.35cqi; color:var(--ink-faint); line-height:1.35}
+.legend{display:flex; gap:1.6cqi; flex-wrap:wrap; font-size:1.4cqi; color:var(--ink-soft)}
+.legend span{display:flex; align-items:center; gap:.5em}
+.swatch{width:1.5em; height:.28em; border-radius:1px; display:inline-block}
+.swatch-hatch{height:.85em; border:1px solid var(--loss);
+  background:repeating-linear-gradient(45deg,var(--loss) 0 1px,transparent 1px 4px),var(--loss-fill)}
+.figpair{display:flex; gap:2cqi; flex:1; min-height:0}
+.figpair>svg{flex:1 1 0; width:auto; min-width:0}
+.col.narrow .panel{padding:1.3cqi 1.4cqi; gap:1cqi}
+.col.narrow .ctrl .val{font-size:2.3cqi}
+.col.narrow .readout{font-size:1.58cqi; gap:.32cqi 1cqi}
+.col.narrow .readout dt{font-size:1.32cqi}
+.col.narrow .verdict{font-size:1.6cqi; padding:.9cqi 1.1cqi; line-height:1.33}
+.slide[data-figs="pair"] .content{gap:2.2cqi}
+.slide[data-figs="pair"] .col.narrow{flex:0 0 25cqi}
+.slide[data-figs="pair"] .panel{padding:1.1cqi 1.2cqi; gap:.9cqi}
+.slide[data-figs="pair"] .ctrl .val{font-size:2.1cqi}
+.slide[data-figs="pair"] .ctrl label{font-size:1.05cqi}
+.slide[data-figs="pair"] .readout{font-size:1.5cqi; gap:.3cqi .8cqi}
+.slide[data-figs="pair"] .readout dt{font-size:1.28cqi}
+.slide[data-figs="pair"] .verdict{font-size:1.5cqi; padding:.85cqi 1cqi}
+.slide[data-figs="pair"] ul.body{font-size:1.62cqi; gap:.85cqi}
+.slide[data-figs="pair"] .def{padding:1.1cqi 1.2cqi}
+.slide[data-figs="pair"] .def dt{font-size:1.72cqi}
+.slide[data-figs="pair"] .def dd{font-size:1.46cqi}
+.slide[data-figs="pair"] button.b{font-size:1.25cqi; padding:.6cqi 1cqi}
+.slide[data-figs="pair"] .figcap{font-size:1.24cqi}
+
+/* ---------- data table ---------- */
+.tbl{width:100%; border-collapse:collapse; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:1.42cqi}
+.tbl th{
+  font-family:"Source Sans 3",sans-serif; font-size:1.18cqi; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-faint); font-weight:700; text-align:right; padding:.55cqi .6cqi; border-bottom:1px solid var(--rule);
+}
+.tbl th:first-child, .tbl td:first-child{text-align:left}
+.tbl td{padding:.5cqi .6cqi; border-bottom:1px solid var(--rule-soft); text-align:right; color:var(--ink-soft)}
+.tbl tr.hi td{background:var(--crude-soft); color:var(--ink); font-weight:600}
+.tbl tr.peak td:first-child::after{content:" \25C0"; color:var(--crude); font-size:.8em}
+.tbl input{
+  width:100%; font:inherit; text-align:right; background:var(--surface); color:var(--ink);
+  border:1px solid var(--rule); border-radius:2px; padding:.25cqi .4cqi;
+}
+.tbl input:focus-visible{outline:2px solid var(--brine); outline-offset:1px}
+.tbl input[data-state="ok"]{border-color:var(--gain); background:var(--gain-fill); color:var(--ink)}
+.tbl input[data-state="no"]{border-color:var(--loss); background:var(--loss-fill); color:var(--ink)}
+.given td{color:var(--ink)}
+
+/* ---------- market-structure spectrum ---------- */
+.spectrum{display:flex; flex-direction:column; gap:1cqi; flex:1; min-height:0}
+.spec-ends{display:flex; justify-content:space-between; font-size:1.12cqi; letter-spacing:.16em;
+  text-transform:uppercase; font-weight:700}
+.spec-ends .l{color:var(--brine)}
+.spec-ends .r{color:var(--loss)}
+.spec-axis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.6cqi;
+  position:relative; height:2.4cqi; align-items:center}
+.spec-axis::before{content:""; position:absolute; left:0; right:0; top:50%; height:.32cqi;
+  transform:translateY(-50%); border-radius:2px;
+  background:linear-gradient(90deg,var(--brine) 0%,var(--brine) 12%,var(--crude) 58%,var(--loss) 95%)}
+.spec-axis i{justify-self:center; position:relative; width:1.25cqi; height:1.25cqi; border-radius:50%;
+  background:var(--stage); border:.32cqi solid var(--ink-faint)}
+.spec-axis i[data-on]{border-color:var(--crude); box-shadow:0 0 0 .4cqi var(--crude-soft)}
+.spec-cols{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.6cqi; flex:1; min-height:0}
+.spec{display:flex; flex-direction:column; gap:.75cqi; min-width:0}
+.spec h3{font-size:1.95cqi; line-height:1.12; min-height:4.4cqi}
+.spec[data-here] h3{color:var(--crude)}
+.spec .tag{font-family:"IBM Plex Mono",monospace; font-size:1.05cqi; letter-spacing:.12em;
+  font-weight:600; color:var(--crude)}
+.spec svg{width:100%; height:8.6cqi; display:block}
+.spec dl{display:grid; grid-template-columns:auto 1fr; gap:.3cqi .8cqi; margin:0; font-size:1.4cqi; align-items:baseline}
+.spec dt{color:var(--ink-faint); font-size:1.18cqi; letter-spacing:.07em; text-transform:uppercase; font-weight:700}
+.spec dd{margin:0; color:var(--ink-soft); line-height:1.3}
+.spec[data-here] dd{color:var(--ink)}
+
+/* ---------- source table ---------- */
+.srctbl{width:100%; border-collapse:collapse; font-size:1.62cqi}
+.srctbl th{font-size:1.15cqi; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint);
+  font-weight:700; text-align:left; padding:.6cqi .8cqi; border-bottom:1px solid var(--rule)}
+.srctbl td{padding:.62cqi .8cqi; border-bottom:1px solid var(--rule-soft); vertical-align:baseline}
+.srctbl td:first-child{font-weight:600; color:var(--ink); white-space:nowrap}
+.srctbl td:last-child{color:var(--ink-soft)}
+.srctbl tr:last-child td{border-bottom:none}
+
+/* ---------- key-term list ---------- */
+.terms{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.9cqi 2.4cqi; flex:1; align-content:start}
+.term{display:flex; flex-direction:column; gap:.2cqi; padding-bottom:.8cqi; border-bottom:1px solid var(--rule-soft)}
+.term b{font-family:Spectral,Georgia,serif; font-size:1.72cqi; color:var(--ink)}
+.term span{font-size:1.48cqi; line-height:1.34; color:var(--ink-soft)}
+
+/* ---------- big stat ---------- */
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:2.4cqi}
+.stat{display:flex; flex-direction:column; gap:.3cqi}
+.stat b{font-family:"IBM Plex Mono",monospace; font-size:4.6cqi; font-weight:600; color:var(--crude); line-height:1}
+.stat span{font-size:1.52cqi; line-height:1.34; color:var(--ink-soft)}
+
+/* ---------- takeaways ---------- */
+.takes{display:flex; flex-direction:column; gap:1.5cqi; flex:1; justify-content:center}
+.take{display:grid; grid-template-columns:14cqi 1fr; gap:2cqi; align-items:baseline; padding-bottom:1.5cqi; border-bottom:1px solid var(--rule-soft)}
+.take:last-child{border-bottom:none; padding-bottom:0}
+.take h3{font-size:2.1cqi; color:var(--crude); line-height:1.15}
+.take p{margin:0; font-size:1.9cqi; line-height:1.42; color:var(--ink-soft)}
+.take p em{color:var(--ink); font-style:normal; font-weight:600}
+
+/* ---------- title slide ---------- */
+.titleslide{justify-content:center; gap:0}
+.titleslide .kicker{font-size:1.4cqi; letter-spacing:.24em; text-transform:uppercase; color:var(--ink-faint); font-weight:700}
+.titleslide h1{font-size:6.4cqi; line-height:1.03; letter-spacing:-.02em; margin:2.2cqi 0 1.6cqi; max-width:20ch}
+.titleslide .sub{font-size:2.1cqi; color:var(--ink-soft); max-width:52ch; line-height:1.45}
+.titleslide .meta{margin-top:3.4cqi; font-size:1.45cqi; color:var(--ink-faint); display:flex; gap:1.2em; flex-wrap:wrap}
+.titleslide .meta b{color:var(--crude); font-weight:600}
+.derrick{position:absolute; right:4cqi; bottom:0; width:34cqi; height:76cqi; opacity:.9; pointer-events:none}
+
+/* ---------- section divider ---------- */
+.divider{justify-content:center; background:var(--ink); color:var(--paper)}
+.divider .num{font-family:"IBM Plex Mono",monospace; font-size:1.4cqi; letter-spacing:.2em; color:var(--crude); font-weight:600}
+.divider h2{font-size:5.2cqi; line-height:1.06; margin:1.6cqi 0 1.4cqi; max-width:22ch; color:var(--paper)}
+.divider p{margin:0; font-size:2cqi; line-height:1.45; color:#A6B5B0; max-width:48ch}
+
+/* ---------- nav ---------- */
+.nav{
+  display:flex; align-items:center; gap:14px; padding:10px 4px 12px; max-width:1420px;
+  margin:0 auto; width:100%; font-size:13px; color:var(--ink-faint);
+}
+.rail{flex:1; display:flex; gap:3px; align-items:stretch; height:16px}
+.rail button{
+  flex:1; border:none; padding:0; background:transparent; cursor:pointer; position:relative; min-width:0;
+}
+.rail button::after{content:""; position:absolute; left:0; right:0; top:7px; height:2px; background:var(--rule); transition:background .15s, height .15s, top .15s}
+.rail button[aria-current="true"]::after{background:var(--crude); height:4px; top:6px}
+.rail button:hover::after{background:var(--brine)}
+.rail button:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.counter{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; letter-spacing:.04em; white-space:nowrap}
+.navbtn{
+  border:1px solid var(--rule); background:var(--surface); color:var(--ink); border-radius:2px;
+  width:30px; height:30px; cursor:pointer; font-size:15px; line-height:1; display:grid; place-items:center;
+}
+.navbtn:hover{border-color:var(--crude); color:var(--crude)}
+.navbtn:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.hint{white-space:nowrap}
+@media (max-width:760px){ .hint{display:none} }
+
+@media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important} }
+
+@media print{
+  @page{size:13.333in 7.5in; margin:0}
+  *{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important}
+  body{background:#fff; display:block}
+  .nav{display:none}
+  .shell{padding:0; display:block}
+  .stagewrap{display:block}
+  .stage{width:100%; max-width:none; max-height:none; height:auto; aspect-ratio:auto;
+    box-shadow:none; border:none; border-radius:0; overflow:visible; background:#fff}
+  .slide{display:flex !important; position:relative; inset:auto; width:100%; aspect-ratio:16/9;
+    overflow:hidden; background:var(--stage); break-after:page; page-break-after:always}
+  .slide:last-child{break-after:auto; page-break-after:auto}
+}
+</style>
+<style>
+.slide .tbl{font-size:1.6cqi}
+.slide .tbl th{font-size:1.2cqi}
+.slide .tbl td{padding:.7cqi .7cqi}
+.def .eq{display:block; margin-top:.4cqi}
+.titleslide .derrick{width:22cqi; height:50cqi; right:5cqi; bottom:6cqi; opacity:.85}
+.titleslide .sub{max-width:40ch}
+.qcards.qgrid4{grid-template-columns:repeat(2,1fr); gap:2.2cqi 3cqi}
+.qgrid4 .qcard h3{font-size:2.1cqi}
+select.sel{font-family:"Source Sans 3",sans-serif; font-size:1.5cqi; padding:.6cqi .8cqi; border:1px solid var(--rule);
+  border-radius:2px; background:var(--surface); color:var(--ink); width:100%}
+select.sel:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.col.narrow .readout dd{white-space:nowrap}
+button.b.reveal{align-self:flex-start; margin-top:.4cqi}
+.qcard p.ans{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="stagewrap">
+    <div class="stage" id="stage">
+
+<section class="slide titleslide on" data-label="Title">
+  <span class="kicker">Principles of Microeconomics &#183; Chapters 3&ndash;4</span>
+  <h1>Supply and Equilibrium</h1>
+  <p class="sub">The supply curve, producer surplus, what shifts supply, and how supply and demand together set the market price.</p>
+  <div class="meta"><span><b>Running example:</b> the market for oil</span><span><b>Drag</b> the sliders on the live diagrams</span></div>
+  <svg class="derrick" viewBox="0 0 160 360" aria-hidden="true">
+    <path d="M20 340 L20 110 M20 340 L150 340" fill="none" stroke="var(--rule)" stroke-width="1.8"/>
+    <path d="M20 225 L80 225 L80 340" fill="none" stroke="var(--crude)" stroke-width="1.4" stroke-dasharray="4 4"/>
+    <path d="M20 130 L140 320" fill="none" stroke="var(--ink-soft)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M20 320 L140 130" fill="none" stroke="var(--brine)" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="80" cy="225" r="5" fill="var(--crude)"/>
+  </svg>
+</section>
+
+<section class="slide" data-label="Overview">
+  <div class="eyebrow"><span>Overview</span><span class="q">What this covers</span></div>
+  <h2 class="stitle">The supply side, then the whole market</h2>
+  <div class="qcards">
+    <div class="qcard"><span class="n">PART 1</span><h3>Supply</h3><p>The supply curve and the law of supply, producer surplus, and the five things that shift supply.</p></div>
+    <div class="qcard"><span class="n">PART 2</span><h3>Equilibrium</h3><p>Where supply meets demand, and how surpluses and shortages push the price toward it.</p></div>
+    <div class="qcard"><span class="n">PART 3</span><h3>Shifts</h3><p>Why equilibrium maximizes the gains from trade, and how P* and Q* change when a curve shifts.</p></div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part I">
+  <span class="num">PART ONE</span>
+  <h2>The supply curve and the law of supply</h2>
+  <p>How much sellers offer at each price, and why they offer more when the price is higher.</p>
+</section>
+
+<section class="slide" data-label="Definitions">
+  <div class="eyebrow"><span>Supply</span><span class="q">Definitions</span></div>
+  <h2 class="stitle">Supply vs. quantity supplied</h2>
+  <div class="content">
+    <div class="col">
+      <div class="defs">
+        <div class="def"><dt>Supply curve</dt><dd>A function that shows the quantity supplied at different prices.</dd></div>
+        <div class="def"><dt>Quantity supplied</dt><dd>The quantity that sellers are willing and able to sell at a particular price.</dd></div>
+        <div class="def"><dt>Law of supply</dt><dd>The supply curve is positively sloped: as the price rises, quantity supplied rises, and as the price falls, quantity supplied falls.</dd></div>
+      </div>
+    </div>
+    <div class="col">
+      <span class="figcap"><strong>Two ways to read a supply curve</strong></span>
+      <ul class="body">
+        <li><strong>Horizontally:</strong> at a given price, how much will sellers offer?</li>
+        <li><strong>Vertically:</strong> to produce a given quantity, what price must sellers be paid?</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Why it slopes up">
+  <div class="eyebrow"><span>Supply</span><span class="q">Why it slopes up</span></div>
+  <h2 class="stitle">Producers have different costs</h2>
+  <div class="content">
+    <div class="col">
+      <ul class="body">
+        <li>At the lowest price, only the lowest-cost producer can make a profit, so very little is supplied.</li>
+        <li>As the price rises, higher-cost producers can cover their costs, so more is produced.</li>
+        <li>At the highest prices, many producers find it worthwhile, and a large quantity is supplied.</li>
+        <li>For oil: as the price rises, it becomes profitable to extract oil from more costly sources.</li>
+      </ul>
+    </div>
+    <div class="col narrow">
+      <div class="def"><dt>How a firm picks its quantity</dt><dd>Quantity supplied is the output that maximizes profit at price P. A firm keeps producing until MC = MR, where the last unit just breaks even. In a competitive market MR = P, so the supply curve is the marginal-cost curve.<span class="eq">Supply = MC</span></dd></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: oil producers">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag the price</span></div>
+  <h2 class="stitle">Which oil sources are worth pumping?</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-src" role="img" aria-label="Five oil sources stacked from lowest to highest cost, forming a step-shaped supply curve; sources whose cost is at or below the price are produced."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--gain)"></i>Produced: cost at or below the price</span><span><i class="swatch" style="background:var(--rule)"></i>Not produced</span><span><i class="swatch" style="background:var(--crude)"></i>Price</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-src">Price per barrel</label>
+          <span class="val" id="s-src-val">$30</span>
+          <input type="range" id="s-src" min="2" max="70" step="1" value="30" aria-label="Price per barrel">
+        </div>
+        <dl class="readout">
+          <dt>Sources producing</dt><dd id="r-srcn">&mdash;</dd>
+          <dt>Quantity supplied</dt><dd id="r-srcq">&mdash;</dd>
+          <dt>Next source&rsquo;s cost</dt><dd id="r-srcnext">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-src" data-tone="flat">&mdash;</div>
+      <p class="figcap">Costs and capacities are illustrative, in millions of barrels per day.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part II">
+  <span class="num">PART TWO</span>
+  <h2>Producer surplus</h2>
+  <p>The difference between the price sellers receive and the lowest price they would accept.</p>
+</section>
+
+<section class="slide" data-label="Producer surplus">
+  <div class="eyebrow"><span>Producer surplus</span><span class="q">The seller&rsquo;s gain</span></div>
+  <h2 class="stitle">Price minus the minimum a seller would accept</h2>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Producer surplus (PS)</dt><dd>The producer&rsquo;s gain from exchange: the difference between the market price and the minimum price a seller would accept (its marginal cost). Total PS is the area above the supply curve and below the price.</dd></div>
+      <p class="formula"><b>PS</b> = &frac12; &times; base &times; height</p>
+    </div>
+    <div class="col">
+      <span class="figcap"><strong>Worked example</strong> &mdash; minimum price $2</span>
+      <ul class="body">
+        <li><strong>Base</strong> = quantity sold. <strong>Height</strong> = market price &minus; minimum price.</li>
+        <li>At <span class="mono">P* = $20</span> and <span class="mono">Q* = 50</span>: PS = &frac12; &times; (20 &minus; 2) &times; 50 = <strong>$450</strong>.</li>
+        <li>Every unit before the last sold for more than it cost to make. Adding up those gaps gives producer surplus.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: producer surplus">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag the price</span></div>
+  <h2 class="stitle">Producer surplus at different prices</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-ps" role="img" aria-label="A straight supply curve starting at a minimum price of $2; the producer surplus triangle lies above supply and below the chosen price."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--brine)"></i>Supply</span><span><i class="swatch" style="background:var(--gain)"></i>Producer surplus</span><span><i class="swatch" style="background:var(--crude)"></i>Market price</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-ps">Market price</label>
+          <span class="val" id="s-ps-val">$20</span>
+          <input type="range" id="s-ps" min="2" max="31" step="1" value="20" aria-label="Market price">
+        </div>
+        <dl class="readout">
+          <dt>Quantity supplied</dt><dd id="r-psq">&mdash;</dd>
+          <dt>Height (P &minus; 2)</dt><dd id="r-psh">&mdash;</dd>
+          <dt>Producer surplus</dt><dd id="r-ps">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-ps" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part III">
+  <span class="num">PART THREE</span>
+  <h2>What shifts supply?</h2>
+  <p>Technology and input prices, taxes and subsidies, expectations, entry and exit, and changes in opportunity cost.</p>
+</section>
+
+<section class="slide" data-label="Shift vs movement">
+  <div class="eyebrow"><span>Shifts</span><span class="q">Two different changes</span></div>
+  <h2 class="stitle">Change in quantity supplied vs. change in supply</h2>
+  <div class="content">
+    <div class="col">
+      <div class="qcard"><span class="n">MOVEMENT ALONG THE CURVE</span><h3>Change in quantity supplied</h3><p>Caused by a change in the good&rsquo;s own price.</p></div>
+      <div class="qcard"><span class="n">SHIFT OF THE WHOLE CURVE</span><h3>Change in supply</h3><p>Caused by a shifter, such as costs or taxes, holding the good&rsquo;s own price constant.</p></div>
+    </div>
+    <div class="col">
+      <ul class="body">
+        <li>An <strong>increase</strong> in supply shifts the curve <strong>right</strong>. At each price sellers offer more, and at each quantity they will accept a lower price.</li>
+        <li>A <strong>decrease</strong> in supply shifts the curve <strong>left</strong>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Costs and taxes">
+  <div class="eyebrow"><span>Shifters 1 &amp; 2</span><span class="q">Technology and input prices, taxes and subsidies</span></div>
+  <h2 class="stitle">Anything that changes costs shifts supply</h2>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Technology and input prices</dt><dd>Better technology lowers costs and increases supply. Higher input prices raise costs and decrease supply.</dd></div>
+      <ul class="body" style="font-size:1.7cqi">
+        <li>Faster car assembly raises the supply of cars (shift right).</li>
+        <li>Bourbon and corn: a drought cuts corn output and raises corn prices. Corn is an input to bourbon, so bourbon supply shifts left.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="def"><dt>Taxes and subsidies</dt><dd>A per-unit tax works like a cost increase. It shifts supply <strong>up</strong> by the amount of the tax. A subsidy does the reverse and shifts supply down and to the right.</dd></div>
+      <ul class="body" style="font-size:1.7cqi">
+        <li>A $1-per-barrel tax on oil shifts S up to S + tax.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Expectations, entry, opportunity cost">
+  <div class="eyebrow"><span>Shifters 3&ndash;5</span><span class="q">Expectations, entry and exit, opportunity cost</span></div>
+  <h2 class="stitle">Expectations, entry and exit, opportunity cost</h2>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Expectations</dt><dd>If sellers expect higher prices later, they store goods and sell less today (shift left). If they expect lower prices later, they sell more now (shift right).</dd></div>
+      <div class="def"><dt>Entry or exit of producers</dt><dd>Entry increases supply: a new housing development in Oxford raises the supply of housing. Exit decreases supply: New Orleans housing after Hurricane Katrina.</dd></div>
+    </div>
+    <div class="col">
+      <div class="def"><dt>Changes in opportunity cost</dt><dd>Producing one good means giving up another. If the price of wheat rises, growing soybeans costs more in lost wheat, so farmers switch to wheat and the supply of soybeans shifts left.</dd></div>
+      <p class="figcap">The same idea applies to college: if the wage premium from a degree falls, the payoff to enrolling instead of working falls. In a labor market, you, the worker, are on the supply side.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: what shifts supply?">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Pick an event</span></div>
+  <h2 class="stitle">Shift, or movement along the curve?</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-sshift" role="img" aria-label="The original supply curve and, for the chosen event, either a shifted supply curve or a movement along the original curve."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--ink-faint)"></i>Original supply S</span><span><i class="swatch" style="background:var(--crude)"></i>New supply S&prime; or new point</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-sev">Event</label>
+          <select id="s-sev" class="sel" aria-label="Event that may shift supply"></select>
+        </div>
+        <dl class="readout">
+          <dt>Shifter</dt><dd id="r-sevk">&mdash;</dd>
+          <dt>Result</dt><dd id="r-sevr">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-sev" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part IV">
+  <span class="num">PART FOUR</span>
+  <h2>Equilibrium</h2>
+  <p>The price where the quantity buyers want equals the quantity sellers offer.</p>
+</section>
+
+<section class="slide" data-label="Equilibrium">
+  <div class="eyebrow"><span>Equilibrium</span><span class="q">Definitions</span></div>
+  <h2 class="stitle">Where supply meets demand</h2>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Equilibrium</dt><dd>The price at which quantity demanded equals quantity supplied: the intersection of the supply and demand curves.</dd></div>
+      <ul class="body" style="font-size:1.8cqi">
+        <li>Equilibrium price and quantity are the only stable point in a free market.</li>
+        <li>At any other price, market forces push price and quantity back toward equilibrium.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="defs">
+        <div class="def"><dt>Surplus (excess supply)</dt><dd>Quantity supplied &gt; quantity demanded. Happens when the price is above equilibrium. Unsold goods pile up, so sellers cut the price.</dd></div>
+        <div class="def"><dt>Shortage (excess demand)</dt><dd>Quantity demanded &gt; quantity supplied. Happens when the price is below equilibrium. Buyers compete for the scarce goods and bid the price up.</dd></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: surplus and shortage">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag the price</span></div>
+  <h2 class="stitle">Surplus, shortage, or equilibrium?</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-eq" role="img" aria-label="Supply and demand crossing at $20 and 50 units; at the chosen price, the gap between quantity supplied and quantity demanded is marked as a surplus or a shortage."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--ink-soft)"></i>Demand</span><span><i class="swatch" style="background:var(--brine)"></i>Supply</span><span><i class="swatch" style="background:var(--crude)"></i>Price</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-eq">Price</label>
+          <span class="val" id="s-eq-val">$28</span>
+          <input type="range" id="s-eq" min="6" max="34" step="1" value="28" aria-label="Price">
+        </div>
+        <dl class="readout">
+          <dt>Quantity demanded</dt><dd id="r-qd">&mdash;</dd>
+          <dt>Quantity supplied</dt><dd id="r-qs">&mdash;</dd>
+          <dt>Gap</dt><dd id="r-gap">&mdash;</dd>
+        </dl>
+        <div class="btnrow"><button class="b" data-eq="20">Go to P* = $20</button></div>
+      </div>
+      <div class="verdict" id="v-eq" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Gains from trade">
+  <div class="eyebrow"><span>Equilibrium</span><span class="q">Gains from trade</span></div>
+  <h2 class="stitle">Equilibrium maximizes the gains from trade</h2>
+  <div class="content">
+    <div class="col">
+      <span class="figcap"><strong>At (P*, Q*), three things are true</strong></span>
+      <ul class="body">
+        <li>The goods go to the buyers with the highest willingness to pay.</li>
+        <li>The goods are made by the sellers with the lowest costs.</li>
+        <li>There are no unexploited gains from trade and no wasteful trades.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="defs">
+        <div class="def"><dt>Trading less than Q*</dt><dd>Some trades that would benefit both sides never happen. Those gains from trade are lost.</dd></div>
+        <div class="def"><dt>Trading more than Q*</dt><dd>The extra units cost more to make than buyers value them, so resources are wasted.</dd></div>
+      </div>
+      <p class="figcap"><strong>Evidence from the laboratory.</strong> In 1956 Vernon Smith tested the supply-and-demand model in lab experiments, and it predicted market behavior accurately. He won the 2002 Nobel Prize for making lab experiments a tool in economics.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: total surplus">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag the quantity traded</span></div>
+  <h2 class="stitle">Total surplus is largest at Q*</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-gft" role="img" aria-label="Supply and demand with consumer and producer surplus shaded up to the chosen quantity; trading less than 50 leaves lost gains, trading more creates wasted value."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--brine)"></i>Gains from trade (CS + PS)</span><span><i class="swatch swatch-hatch"></i>Lost or wasted value</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-gft">Quantity traded</label>
+          <span class="val" id="s-gft-val">30</span>
+          <input type="range" id="s-gft" min="0" max="80" step="2" value="30" aria-label="Quantity traded">
+        </div>
+        <dl class="readout">
+          <dt>Total surplus</dt><dd id="r-gft">&mdash;</dd>
+          <dt>At Q* = 50</dt><dd>$900</dd>
+          <dt>Lost or wasted</dt><dd id="r-dwl">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-gft" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part V">
+  <span class="num">PART FIVE</span>
+  <h2>Comparative statics</h2>
+  <p>When supply or demand shifts, the equilibrium price and quantity change.</p>
+</section>
+
+<section class="slide" data-label="Four cases">
+  <div class="eyebrow"><span>Comparative statics</span><span class="q">The four basic cases</span></div>
+  <h2 class="stitle">How P* and Q* respond to a shift</h2>
+  <div class="content">
+    <div class="col wide">
+      <table class="tbl">
+        <thead><tr><th>Change</th><th>Price (P*)</th><th>Quantity (Q*)</th></tr></thead>
+        <tbody>
+          <tr class="given"><td>Demand increases (right)</td><td>Rises</td><td>Rises</td></tr>
+          <tr class="given"><td>Demand decreases (left)</td><td>Falls</td><td>Falls</td></tr>
+          <tr class="given"><td>Supply increases (right)</td><td>Falls</td><td>Rises</td></tr>
+          <tr class="given"><td>Supply decreases (left)</td><td>Rises</td><td>Falls</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col narrow">
+      <div class="def"><dt>Watch the language</dt><dd>A change in demand or supply shifts the whole curve. A change in quantity demanded or quantity supplied is a movement along a fixed curve.</dd></div>
+      <p class="figcap">Application: shifts in world demand and supply explain the swings in the price of oil over time.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: shifting equilibrium">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Shift a curve</span></div>
+  <h2 class="stitle">Move a curve, find the new equilibrium</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-cs4" role="img" aria-label="Supply and demand with the original equilibrium E and, after the chosen shift, the new curve and new equilibrium E prime."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--ink-faint)"></i>Original curve</span><span><i class="swatch" style="background:var(--crude)"></i>Shifted curve</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="btnrow" role="group" aria-label="Shift">
+          <button class="b" data-sh="dU" aria-pressed="true">Demand &uarr;</button>
+          <button class="b" data-sh="dD" aria-pressed="false">Demand &darr;</button>
+          <button class="b" data-sh="sU" aria-pressed="false">Supply &uarr;</button>
+          <button class="b" data-sh="sD" aria-pressed="false">Supply &darr;</button>
+        </div>
+        <dl class="readout">
+          <dt>Price</dt><dd id="r-cp">&mdash;</dd>
+          <dt>Quantity</dt><dd id="r-cq">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-cs4" data-tone="flat">&mdash;</div>
+      <p class="figcap">&uarr; means an increase (shift right). &darr; means a decrease (shift left).</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Self-check">
+  <div class="eyebrow"><span>Quiz self-check</span><span class="q">Be able to answer</span></div>
+  <h2 class="stitle">Questions to answer without notes</h2>
+  <div class="qcards qgrid4">
+    <div class="qcard"><span class="n">QUESTION 1</span><h3>New technology speeds up car assembly. What happens to supply?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>Supply of cars <strong>shifts right</strong>.</p></div>
+    <div class="qcard"><span class="n">QUESTION 2</span><h3>There is a surplus in a competitive market. What happens to price?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>Price <strong>decreases</strong>. A shortage makes it <strong>increase</strong>.</p></div>
+    <div class="qcard"><span class="n">QUESTION 3</span><h3>Supply decreases. What happens to P* and Q*?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>Price <strong>rises</strong>, quantity <strong>falls</strong>.</p></div>
+    <div class="qcard"><span class="n">QUESTION 4</span><h3>Demand decreases. What happens to P* and Q*?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>Price <strong>falls</strong>, quantity <strong>falls</strong>.</p></div>
+  </div>
+</section>
+
+<section class="slide" data-label="Takeaway">
+  <div class="eyebrow"><span>Takeaway</span></div>
+  <h2 class="stitle">Summary</h2>
+  <div class="takes">
+    <div class="take"><h3>Supply</h3><p>Supply slopes up (the law of supply). Producer surplus, the area <em>above supply and below the price</em>, is the seller&rsquo;s gain.</p></div>
+    <div class="take"><h3>Equilibrium</h3><p>A market settles where <em>quantity demanded = quantity supplied</em>, the only stable price.</p></div>
+    <div class="take"><h3>Adjustment</h3><p>A surplus pushes the price <em>down</em>. A shortage pushes the price <em>up</em>.</p></div>
+    <div class="take"><h3>Gains</h3><p>Total gains from trade (CS + PS) are <em>largest at equilibrium</em>.</p></div>
+    <div class="take"><h3>Shifts</h3><p>Demand up raises P and Q. Supply up lowers P and raises Q. A shift moves the whole curve; a movement is along it.</p></div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Key terms">
+  <div class="eyebrow"><span>Reference</span><span class="q">Key terms</span></div>
+  <h2 class="stitle">Key terms</h2>
+  <div class="terms">
+    <div class="term"><b>Supply / quantity supplied</b><span>Supply is the whole curve. Quantity supplied is the amount at one price.</span></div>
+    <div class="term"><b>Law of supply</b><span>Price up, quantity supplied up. Price down, quantity supplied down.</span></div>
+    <div class="term"><b>Producer surplus</b><span>Seller&rsquo;s gain: the area above supply and below the price (Supply = MC).</span></div>
+    <div class="term"><b>Equilibrium</b><span>Where supply meets demand: P* and Q*, with quantity demanded = quantity supplied.</span></div>
+    <div class="term"><b>Surplus</b><span>Price above equilibrium: quantity supplied exceeds quantity demanded, so price falls.</span></div>
+    <div class="term"><b>Shortage</b><span>Price below equilibrium: quantity demanded exceeds quantity supplied, so price rises.</span></div>
+    <div class="term"><b>Comparative statics</b><span>How equilibrium P* and Q* change when supply or demand shifts.</span></div>
+    <div class="term"><b>Shift vs. movement</b><span>A shifter moves the whole curve. The good&rsquo;s own price moves you along it.</span></div>
+  </div>
+</section>
+
+    </div>
+  </div>
+  <nav class="nav" aria-label="Slide navigation">
+    <button class="navbtn" id="prev" aria-label="Previous slide">&#8249;</button>
+    <button class="navbtn" id="next" aria-label="Next slide">&#8250;</button>
+    <div class="rail" id="rail" role="tablist" aria-label="Slides"></div>
+    <span class="counter" id="counter">1 / 1</span>
+    <span class="hint">&#8592; &#8594; to move &#183; drag any slider</span>
+  </nav>
+</div>
+
+<script>
+(function(){
+"use strict";
+var NS="http://www.w3.org/2000/svg";
+function E(n,a,t){var e=document.createElementNS(NS,n);for(var k in a){if(a[k]!==null&&a[k]!==undefined)e.setAttribute(k,a[k]);}if(t!==undefined)e.textContent=t;return e;}
+function C(n){return "var("+n+")";}
+function money(v,d){return "$"+Number(v).toFixed(d===undefined?2:d);}
+var MINUS="\u2212";
+function signed(v,d){return v<0?MINUS+money(-v,d):money(v,d);}
+
+function Frame(svg,o){
+  var W=o.W||440,H=o.H||300,L=(o.L===undefined?50:o.L),R=(o.R===undefined?16:o.R),T=(o.T===undefined?16:o.T),B=(o.B===undefined?40:o.B);
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  var x0=o.x0||0,x1=o.x1,y0=(o.y0===undefined?0:o.y0),y1=o.y1;
+  var f={svg:svg,W:W,H:H,x0:x0,x1:x1,y0:y0,y1:y1,
+    x:function(v){return L+(v-x0)/(x1-x0)*(W-L-R);},
+    y:function(v){return H-B-(v-y0)/(y1-y0)*(H-T-B);},
+    add:function(e){svg.appendChild(e);return e;}};
+  f.left=L; f.right=W-R; f.top=T; f.bottom=H-B;
+  f.add(E("path",{d:"M"+L+" "+T+" L"+L+" "+(H-B)+" L"+(W-R)+" "+(H-B),fill:"none",stroke:C("--rule"),"stroke-width":1.2}));
+  if(o.xlabel)f.add(E("text",{x:(L+W-R)/2,y:H-6,fill:C("--ink-faint"),"font-size":11,"text-anchor":"middle","font-family":"'Source Sans 3',sans-serif"},o.xlabel));
+  if(o.ylabel)f.add(E("text",{x:-(T+H-B)/2,y:13,fill:C("--ink-faint"),"font-size":11,"text-anchor":"middle",transform:"rotate(-90)","font-family":"'Source Sans 3',sans-serif"},o.ylabel));
+  return f;
+}
+function line(f,ax,ay,bx,by,stroke,w,dash){return f.add(E("line",{x1:f.x(ax),y1:f.y(ay),x2:f.x(bx),y2:f.y(by),stroke:stroke,"stroke-width":w||2,"stroke-dasharray":dash||null,"stroke-linecap":"round"}));}
+function curve(f,fn,a,b,stroke,w,dash){
+  var d="",i,q,v;
+  for(i=0;i<=140;i++){q=a+(b-a)*i/140; v=fn(q); if(!isFinite(v)||v>f.y1||v<f.y0){d="";continue;} d+=(d===""?"M":"L")+f.x(q).toFixed(2)+" "+f.y(v).toFixed(2);}
+  return f.add(E("path",{d:d,fill:"none",stroke:stroke,"stroke-width":w||2,"stroke-linejoin":"round","stroke-dasharray":dash||null}));
+}
+function lab(f,px,py,txt,fill,size,anchor){return f.add(E("text",{x:px,y:py,fill:fill,"font-size":size||11,"text-anchor":anchor||"start","font-weight":600,"font-family":"'IBM Plex Mono',monospace"},txt));}
+function cross(f,qx,py){
+  f.add(E("path",{d:"M"+f.x(qx)+" "+f.bottom+" L"+f.x(qx)+" "+f.y(py),stroke:C("--crude"),"stroke-width":1.1,"stroke-dasharray":"3 3",fill:"none"}));
+  f.add(E("path",{d:"M"+f.left+" "+f.y(py)+" L"+f.x(qx)+" "+f.y(py),stroke:C("--crude"),"stroke-width":1.1,"stroke-dasharray":"3 3",fill:"none"}));
+  f.add(E("circle",{cx:f.x(qx),cy:f.y(py),r:3.6,fill:C("--crude")}));
+}
+function xticks(f,v,fmt){v.forEach(function(t){
+  f.add(E("line",{x1:f.x(t),x2:f.x(t),y1:f.bottom,y2:f.bottom+4,stroke:C("--rule"),"stroke-width":1}));
+  f.add(E("text",{x:f.x(t),y:f.bottom+15,fill:C("--ink-faint"),"font-size":10,"text-anchor":"middle","font-family":"'IBM Plex Mono',monospace"},fmt?fmt(t):String(t)));});}
+function yticks(f,v,fmt){v.forEach(function(t){
+  f.add(E("line",{x1:f.left-4,x2:f.left,y1:f.y(t),y2:f.y(t),stroke:C("--rule"),"stroke-width":1}));
+  f.add(E("text",{x:f.left-7,y:f.y(t)+3.4,fill:C("--ink-faint"),"font-size":10,"text-anchor":"end","font-family":"'IBM Plex Mono',monospace"},fmt?fmt(t):String(t)));});}
+function hatchDefs(f){
+  var d=E("defs"),p=E("pattern",{id:"dwlhatch",width:6,height:6,patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"});
+  p.appendChild(E("rect",{width:6,height:6,fill:C("--loss-fill")}));
+  p.appendChild(E("line",{x1:0,y1:0,x2:0,y2:6,stroke:C("--loss"),"stroke-width":1.6,opacity:.75}));
+  d.appendChild(p); f.add(d);
+}
+function V(id,tone,html){var e=document.getElementById(id); if(!e)return; e.dataset.tone=tone; e.innerHTML=html;}
+
+
+function arrowDefs(f){
+  var id="arr-"+f.svg.id; f.arr="url(#"+id+")";
+  var d=E("defs"),m=E("marker",{id:id,viewBox:"0 0 10 10",refX:8,refY:5,markerWidth:7,markerHeight:7,orient:"auto-start-reverse"});
+  m.appendChild(E("path",{d:"M0 0 L10 5 L0 10 Z",fill:C("--crude")})); d.appendChild(m); f.add(d);
+}
+function usd(v){return "$"+(Math.round(v*100)/100).toLocaleString(undefined,{maximumFractionDigits:2});}
+function q1(v){return (Math.round(v*10)/10).toString();}
+
+/* ============ Live 1: oil sources stacked by cost ============ */
+var SRC=[{n:"Saudi Arabia",c:5,k:15},{n:"Texas",c:15,k:10},{n:"Deepwater",c:30,k:10},{n:"Oil sands",c:45,k:8},{n:"Arctic",c:60,k:7}];
+function drawSrc(p){
+  var svg=document.getElementById("fig-src"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,x1:54,y1:72,xlabel:"Millions of barrels per day",ylabel:"Cost per barrel ($)"});
+  yticks(f,[20,40,60],function(v){return "$"+v;});
+  xticks(f,[0,10,20,30,40,50]);
+  var x=0,q=0,n=0,next=null,d="";
+  SRC.forEach(function(s,i){
+    var on=s.c<=p;
+    f.add(E("rect",{x:f.x(x),y:f.y(s.c),width:f.x(x+s.k)-f.x(x),height:f.y(0)-f.y(s.c),fill:on?C("--gain-fill"):C("--surface-2"),stroke:on?C("--gain"):C("--rule"),"stroke-width":1.2}));
+    var mid=x+s.k/2;
+    f.add(E("text",{x:f.x(mid),y:f.y(s.c)-15,fill:on?C("--gain"):C("--ink-faint"),"font-size":10,"text-anchor":"middle","font-weight":600,"font-family":"'Source Sans 3',sans-serif"},s.n));
+    lab(f,f.x(mid),f.y(s.c)-4,"$"+s.c,on?C("--gain"):C("--ink-faint"),10,"middle");
+    d+=(i===0?"M"+f.x(0)+" "+f.y(s.c):" L"+f.x(x)+" "+f.y(s.c))+" L"+f.x(x+s.k)+" "+f.y(s.c);
+    if(on){q+=s.k;n++;} else if(next===null)next=s;
+    x+=s.k;
+  });
+  f.add(E("path",{d:d,fill:"none",stroke:C("--brine"),"stroke-width":2.2}));
+  lab(f,f.x(51),f.y(60)-6,"S",C("--brine"),12,"start");
+  f.add(E("line",{x1:f.left,x2:f.right,y1:f.y(p),y2:f.y(p),stroke:C("--crude"),"stroke-width":2.2}));
+  lab(f,f.right,f.y(p)-6,"price $"+p,C("--crude"),11,"end");
+  document.getElementById("r-srcn").textContent=n+" of 5";
+  document.getElementById("r-srcq").textContent=q+"M bbl/day";
+  document.getElementById("r-srcnext").textContent=next?"$"+next.c+" ("+next.n+")":"—";
+  if(n===0)V("v-src","loss","<strong>Nothing is supplied.</strong> Even the cheapest source costs $5 a barrel, more than the $"+p+" price.");
+  else if(n===5)V("v-src","gain","<strong>Every source is pumping.</strong> At $"+p+", even Arctic oil at $60 a barrel covers its cost. Quantity supplied is 50 million barrels a day.");
+  else V("v-src","flat","<strong>"+n+" source"+(n>1?"s":"")+" producing.</strong> Every source with a cost at or below $"+p+" pumps. The next one, "+next.n+", needs a price of at least $"+next.c+".");
+}
+
+/* ============ market: S: P = 2 + 0.36Q, D: P = 38 - 0.36Q ============ */
+function sP(q){return 2+0.36*q;} function dP(q){return 38-0.36*q;}
+function qS(p){return (p-2)/0.36;} function qD(p){return (38-p)/0.36;}
+
+/* ============ Live 2: producer surplus ============ */
+function drawPS(p){
+  var svg=document.getElementById("fig-ps"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,x1:86,y1:34,xlabel:"Quantity",ylabel:"Price ($)"});
+  var q=qS(p), ps=0.5*(p-2)*q;
+  if(q>0.01)f.add(E("path",{d:"M"+f.x(0)+" "+f.y(2)+" L"+f.x(q)+" "+f.y(p)+" L"+f.x(0)+" "+f.y(p)+" Z",fill:C("--gain-fill"),stroke:C("--gain"),"stroke-width":1.2}));
+  yticks(f,[2,10,20,30],function(v){return "$"+v;});
+  xticks(f,[25,50,75]);
+  line(f,0,2,84,sP(84),C("--brine"),2.4);
+  lab(f,f.x(80),f.y(sP(80))-10,"S",C("--brine"),12,"middle");
+  lab(f,f.x(0)+6,f.y(2)+14,"minimum price $2",C("--ink-faint"),10,"start");
+  if(q>0.01){
+    f.add(E("line",{x1:f.left,x2:f.right,y1:f.y(p),y2:f.y(p),stroke:C("--crude"),"stroke-width":1.4,"stroke-dasharray":"4 3"}));
+    cross(f,q,p);
+    if(q>14)lab(f,f.x(q*0.3),f.y(2+(p-2)*0.7)+4,"PS",C("--gain"),12,"middle");
+  }
+  document.getElementById("r-psq").textContent=q1(q);
+  document.getElementById("r-psh").textContent="$"+(p-2);
+  document.getElementById("r-ps").textContent=usd(ps);
+  var calc="&frac12; &times; "+(p-2)+" &times; "+q1(q)+" = $"+(Math.round(ps*100)/100).toLocaleString();
+  if(p<=2)V("v-ps","loss","<strong>At $2, nothing is supplied.</strong> No seller can cover its cost, so producer surplus is zero.");
+  else if(p===20)V("v-ps","gain","<strong>The worked example.</strong> PS = "+calc+".");
+  else V("v-ps",p>20?"gain":"flat","<strong>PS = "+calc+".</strong> "+(p>20?"A higher price: existing sellers earn more on each unit, and higher-cost sellers start producing.":"A lower price: a smaller triangle, and the highest-cost sellers stop producing."));
+}
+
+/* ============ Live 3: supply shifters ============ */
+var SEV=[
+  ["Faster car assembly · cars","Technology",1,"Better technology lowers the cost of each car, so sellers offer more at every price."],
+  ["Drought raises corn prices · bourbon","Input prices",-1,"Corn is an input to bourbon. A higher input price raises costs, so bourbon supply shifts left."],
+  ["$1 per-barrel tax · oil","Taxes",-1,"A per-unit tax works like a cost increase. Supply shifts up by the amount of the tax, which is the same as a shift left."],
+  ["Per-unit subsidy · oil","Subsidies",1,"A subsidy lowers sellers&rsquo; costs, so supply shifts down and to the right."],
+  ["Sellers expect higher prices later · oil","Expectations",-1,"Sellers store oil to sell later at the higher price, so they offer less today."],
+  ["Sellers expect lower prices later · oil","Expectations",1,"Sellers would rather sell now than later, so they offer more today."],
+  ["New development opens · Oxford housing","Entry",1,"New producers enter the market, so the supply of housing increases."],
+  ["Hurricane Katrina · New Orleans housing","Exit",-1,"Destruction and exit reduced the number of homes offered, so supply shifted left."],
+  ["Price of wheat rises · soybeans","Opportunity cost",-1,"Growing soybeans now means giving up more valuable wheat, so farmers switch to wheat and soybean supply falls."],
+  ["Price of oil rises · oil","None (own price)",0,"Oil&rsquo;s own price changed, so the curve stays put. Sellers move up along it: a change in <em>quantity supplied</em>."],
+  ["Price of cars falls · cars","None (own price)",-2,"The good&rsquo;s own price fell: a movement down along the same curve. Quantity supplied falls; supply is unchanged."]
+];
+function bS(q){return 1+0.1*q;}
+function drawSShift(i){
+  var ev=SEV[i], svg=document.getElementById("fig-sshift"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,x1:130,y1:13.5,xlabel:"Quantity",ylabel:"Price"});
+  arrowDefs(f);
+  var mv=(ev[2]===0||ev[2]===-2);
+  line(f,0,1,100,11,mv?C("--brine"):C("--ink-faint"),2.2,mv?null:"5 4");
+  lab(f,f.x(100)+4,f.y(11)+4,"S",mv?C("--brine"):C("--ink-faint"),12,"start");
+  if(!mv){
+    var s=ev[2]*25, q0=Math.max(0,s);
+    line(f,q0,1+0.1*(q0-s),Math.min(125,100+s),1+0.1*(Math.min(125,100+s)-s),C("--crude"),2.6);
+    var qe=Math.min(125,100+s);
+    var name=ev[1]==="Taxes"?"S + tax":ev[1]==="Subsidies"?"S − subsidy":"S′";
+    lab(f,f.x(qe)+(s>0?-6:4),f.y(1+0.1*(qe-s))+(s>0?16:4),name,C("--crude"),12,s>0?"end":"start");
+    [5,8].forEach(function(pp){
+      var a=(pp-1)/0.1;
+      f.add(E("line",{x1:f.x(a),y1:f.y(pp),x2:f.x(a+s*0.82),y2:f.y(pp),stroke:C("--crude"),"stroke-width":1.8,"marker-end":f.arr}));
+    });
+    lab(f,f.left+8,f.top+12,s>0?"shift right: increase in supply":"shift left: decrease in supply",C("--crude"),11,"start");
+  } else {
+    var a2=ev[2]===0?[40,65]:[65,40];
+    f.add(E("circle",{cx:f.x(a2[0]),cy:f.y(bS(a2[0])),r:4.5,fill:C("--stage"),stroke:C("--ink-faint"),"stroke-width":1.8}));
+    var dir=a2[1]>a2[0]?1:-1;
+    f.add(E("line",{x1:f.x(a2[0]+3*dir),y1:f.y(bS(a2[0]+3*dir))-9,x2:f.x(a2[1]-3*dir),y2:f.y(bS(a2[1]-3*dir))-9,stroke:C("--crude"),"stroke-width":1.8,"marker-end":f.arr}));
+    cross(f,a2[1],bS(a2[1]));
+    lab(f,f.left+8,f.top+12,"movement along S: change in quantity supplied",C("--crude"),11,"start");
+  }
+  document.getElementById("r-sevk").textContent=ev[1];
+  document.getElementById("r-sevr").textContent=ev[2]===1?"S shifts right":ev[2]===-1?(ev[1]==="Taxes"?"S shifts up/left":"S shifts left"):"Move along S";
+  V("v-sev",ev[2]===1?"gain":ev[2]===-1?"loss":"flat",ev[3]);
+}
+
+/* ============ Live 4: surplus and shortage ============ */
+function mktFrame(svg,o){
+  var f=Frame(svg,{W:520,H:300,x1:(o&&o.x1)||106,y1:(o&&o.y1)||40,xlabel:"Quantity",ylabel:"Price ($)"});
+  yticks(f,[10,20,30],function(v){return "$"+v;});
+  xticks(f,[25,50,75,100]);
+  return f;
+}
+function drawEq(p){
+  var svg=document.getElementById("fig-eq"); if(!svg)return;
+  var f=mktFrame(svg); arrowDefs(f);
+  line(f,0,38,105.5,0,C("--ink-soft"),2.4); line(f,0,2,100,sP(100),C("--brine"),2.4);
+  lab(f,f.x(100),f.y(dP(100))-9,"D",C("--ink-soft"),12,"middle");
+  lab(f,f.x(97),f.y(sP(97))+16,"S",C("--brine"),12,"middle");
+  f.add(E("circle",{cx:f.x(50),cy:f.y(20),r:3.6,fill:C("--stage"),stroke:C("--ink-soft"),"stroke-width":1.6}));
+  var qd=qD(p), qs=qS(p), gap=qs-qd;
+  f.add(E("line",{x1:f.left,x2:f.right,y1:f.y(p),y2:f.y(p),stroke:C("--crude"),"stroke-width":1.6,"stroke-dasharray":p===20?null:"4 3"}));
+  lab(f,f.left+5,f.y(p)-6,"$"+p,C("--crude"),10.5,"start");
+  if(Math.abs(gap)>0.01){
+    var lo=Math.min(qd,qs), hi=Math.max(qd,qs), yy=f.y(p);
+    f.add(E("line",{x1:f.x(lo),x2:f.x(hi),y1:yy,y2:yy,stroke:gap>0?C("--loss"):C("--crude"),"stroke-width":5,opacity:.85}));
+    f.add(E("circle",{cx:f.x(qd),cy:yy,r:3.6,fill:C("--ink-soft")}));
+    f.add(E("circle",{cx:f.x(qs),cy:yy,r:3.6,fill:C("--brine")}));
+    lab(f,f.x((lo+hi)/2),yy+(gap>0?-10:18),(gap>0?"surplus ":"shortage ")+q1(Math.abs(gap)),gap>0?C("--loss"):C("--crude"),11,"middle");
+    var px=f.right-22;
+    f.add(E("line",{x1:px,y1:yy+(gap>0?6:-6),x2:px,y2:yy+(gap>0?34:-34),stroke:C("--crude"),"stroke-width":2,"marker-end":f.arr}));
+  } else cross(f,50,20);
+  document.getElementById("r-qd").textContent=q1(qd);
+  document.getElementById("r-qs").textContent=q1(qs);
+  document.getElementById("r-gap").textContent=Math.abs(gap)<0.01?"none":(gap>0?"surplus of ":"shortage of ")+q1(Math.abs(gap));
+  if(Math.abs(gap)<0.01)V("v-eq","gain","<strong>Equilibrium.</strong> At $20, buyers want 50 and sellers offer 50. Nothing pushes the price up or down.");
+  else if(gap>0)V("v-eq","loss","<strong>Surplus.</strong> The price is above equilibrium. Sellers offer "+q1(qs)+" but buyers want only "+q1(qd)+". Unsold goods pile up, so sellers cut the price.");
+  else V("v-eq","flat","<strong>Shortage.</strong> The price is below equilibrium. Buyers want "+q1(qd)+" but sellers offer only "+q1(qs)+". Buyers bid the price up.");
+}
+
+/* ============ Live 5: total surplus vs quantity traded ============ */
+function drawGFT(q){
+  var svg=document.getElementById("fig-gft"); if(!svg)return;
+  var f=mktFrame(svg); hatchDefs(f);
+  var m=Math.min(q,50);
+  if(m>0){
+    f.add(E("path",{d:"M"+f.x(0)+" "+f.y(38)+" L"+f.x(m)+" "+f.y(dP(m))+" L"+f.x(m)+" "+f.y(sP(m))+" L"+f.x(0)+" "+f.y(2)+" Z",fill:C("--brine"),opacity:.26,stroke:C("--brine"),"stroke-width":1.1}));
+  }
+  if(q<50)f.add(E("path",{d:"M"+f.x(q)+" "+f.y(dP(q))+" L"+f.x(50)+" "+f.y(20)+" L"+f.x(q)+" "+f.y(sP(q))+" Z",fill:"url(#dwlhatch)",stroke:C("--loss"),"stroke-width":1.1}));
+  if(q>50)f.add(E("path",{d:"M"+f.x(50)+" "+f.y(20)+" L"+f.x(q)+" "+f.y(sP(q))+" L"+f.x(q)+" "+f.y(dP(q))+" Z",fill:"url(#dwlhatch)",stroke:C("--loss"),"stroke-width":1.1}));
+  line(f,0,38,105.5,0,C("--ink-soft"),2.4); line(f,0,2,100,sP(100),C("--brine"),2.4);
+  lab(f,f.x(100),f.y(dP(100))-9,"D",C("--ink-soft"),12,"middle");
+  lab(f,f.x(97),f.y(sP(97))+16,"S",C("--brine"),12,"middle");
+  f.add(E("line",{x1:f.x(q),x2:f.x(q),y1:f.bottom,y2:f.top+14,stroke:C("--crude"),"stroke-width":1.6,"stroke-dasharray":"4 3"}));
+  lab(f,f.x(q),f.top+10,"Q = "+q,C("--crude"),11,"middle");
+  var lost=0.36*(q-50)*(q-50), tot=900-lost;
+  document.getElementById("r-gft").textContent=usd(tot);
+  document.getElementById("r-dwl").textContent=usd(lost);
+  if(q===50)V("v-gft","gain","<strong>Q = Q*.</strong> Every trade worth making happens and no wasteful ones do. Total surplus is at its maximum, $900.");
+  else if(q<50)V("v-gft","loss","<strong>Too few trades.</strong> Between "+q+" and 50, buyers value the good more than it costs to make, but those trades never happen. "+usd(lost)+" in gains is lost.");
+  else V("v-gft","loss","<strong>Too many trades.</strong> Beyond 50, each unit costs more to make than buyers value it. Those trades waste "+usd(lost)+" in resources.");
+}
+
+/* ============ Live 6: comparative statics ============ */
+var SH={
+  dU:{d:20,s:0,p:23.6,q:60,t:"<strong>Demand increases.</strong> Demand shifts right. At the old price there is now a shortage, so the price rises. Price and quantity both <strong>rise</strong>."},
+  dD:{d:-20,s:0,p:16.4,q:40,t:"<strong>Demand decreases.</strong> Demand shifts left. At the old price there is now a surplus, so the price falls. Price and quantity both <strong>fall</strong>."},
+  sU:{d:0,s:20,p:16.4,q:60,t:"<strong>Supply increases.</strong> Supply shifts right. At the old price there is now a surplus, so the price falls. Price <strong>falls</strong>, quantity <strong>rises</strong>."},
+  sD:{d:0,s:-20,p:23.6,q:40,t:"<strong>Supply decreases.</strong> Supply shifts left. At the old price there is now a shortage, so the price rises. Price <strong>rises</strong>, quantity <strong>falls</strong>."}
+};
+function drawCS4(k){
+  var c=SH[k], svg=document.getElementById("fig-cs4"); if(!svg)return;
+  var f=mktFrame(svg,{x1:128}); arrowDefs(f);
+  xticks(f,[125]);
+  var dm=c.d!==0, sm=c.s!==0;
+  line(f,0,38,105.5,0,dm?C("--ink-faint"):C("--ink-soft"),2.2,dm?"5 4":null);
+  line(f,0,2,100,sP(100),sm?C("--ink-faint"):C("--brine"),2.2,sm?"5 4":null);
+  lab(f,f.x(103),f.y(dP(103))-9,"D",C("--ink-soft"),12,"middle");
+  lab(f,f.x(97),f.y(sP(97))+16,"S",C("--brine"),12,"middle");
+  if(dm){var a=Math.max(0,c.d), e=Math.min(125.5,105.5+c.d);
+    line(f,a,38-0.36*(a-c.d),e,38-0.36*(e-c.d),C("--crude"),2.6);
+    lab(f,f.x(e)-6,f.y(38-0.36*(e-c.d))-10,"D′",C("--crude"),12,"end");
+    f.add(E("line",{x1:f.x(30),y1:f.y(dP(30)),x2:f.x(30+c.d*0.8),y2:f.y(dP(30)),stroke:C("--crude"),"stroke-width":1.8,"marker-end":f.arr}));}
+  if(sm){var a3=c.s>0?14.5:0, b3=Math.min(110,100+c.s);
+    line(f,a3,2+0.36*(a3-c.s),b3,2+0.36*(b3-c.s),C("--crude"),2.6);
+    lab(f,f.x(b3)+4,f.y(2+0.36*(b3-c.s))+4,"S′",C("--crude"),12,"start");
+    f.add(E("line",{x1:f.x(qS(30)),y1:f.y(30),x2:f.x(qS(30)+c.s*0.8),y2:f.y(30),stroke:C("--crude"),"stroke-width":1.8,"marker-end":f.arr}));}
+  f.add(E("circle",{cx:f.x(50),cy:f.y(20),r:4.5,fill:C("--stage"),stroke:C("--ink-soft"),"stroke-width":1.8}));
+  lab(f,f.x(50)-8,f.y(20)+16,"E",C("--ink-soft"),11.5,"end");
+  cross(f,c.q,c.p);
+  lab(f,f.x(c.q)+8,f.y(c.p)-8,"E′",C("--crude"),11.5,"start");
+  document.getElementById("r-cp").textContent="$20 → $"+c.p.toFixed(2);
+  document.getElementById("r-cq").textContent="50 → "+c.q;
+  V("v-cs4",c.p>20?"loss":"gain",c.t);
+  Array.prototype.forEach.call(document.querySelectorAll("[data-sh]"),function(b){b.setAttribute("aria-pressed",b.dataset.sh===k?"true":"false");});
+}
+
+/* ---------------- wiring ---------------- */
+function on(id,fn){var e=document.getElementById(id); if(e)e.addEventListener("input",fn);}
+on("s-src",function(e){var v=+e.target.value;document.getElementById("s-src-val").textContent="$"+v;drawSrc(v);});
+drawSrc(30);
+on("s-ps",function(e){var v=+e.target.value;document.getElementById("s-ps-val").textContent="$"+v;drawPS(v);});
+drawPS(20);
+var ssel=document.getElementById("s-sev");
+SEV.forEach(function(ev,i){var o=document.createElement("option");o.value=i;o.textContent=ev[0];ssel.appendChild(o);});
+ssel.addEventListener("change",function(){drawSShift(+ssel.value);});
+drawSShift(0);
+function setEq(v){document.getElementById("s-eq").value=v;document.getElementById("s-eq-val").textContent="$"+v;drawEq(v);}
+on("s-eq",function(e){setEq(+e.target.value);});
+Array.prototype.forEach.call(document.querySelectorAll("[data-eq]"),function(b){b.addEventListener("click",function(){setEq(+b.dataset.eq);});});
+setEq(28);
+on("s-gft",function(e){var v=+e.target.value;document.getElementById("s-gft-val").textContent=v;drawGFT(v);});
+drawGFT(30);
+Array.prototype.forEach.call(document.querySelectorAll("[data-sh]"),function(b){b.addEventListener("click",function(){drawCS4(b.dataset.sh);});});
+drawCS4("dU");
+
+
+Array.prototype.forEach.call(document.querySelectorAll("button.reveal"),function(btn){
+  btn.addEventListener("click",function(){
+    var ans=btn.nextElementSibling, open=ans.hidden;
+    ans.hidden=!open; btn.setAttribute("aria-expanded",open?"true":"false");
+    btn.textContent=open?"Hide answer":"Show answer";
+  });
+});
+var slides=Array.prototype.slice.call(document.querySelectorAll(".slide"));
+var rail=document.getElementById("rail"), counter=document.getElementById("counter"), cur=0;
+slides.forEach(function(s,i){
+  var b=document.createElement("button"); b.type="button"; b.setAttribute("role","tab");
+  b.setAttribute("aria-label","Slide "+(i+1)+": "+(s.dataset.label||"")); b.title=(i+1)+". "+(s.dataset.label||"");
+  b.addEventListener("click",function(){go(i);}); rail.appendChild(b);
+});
+function go(i){
+  cur=Math.max(0,Math.min(slides.length-1,i));
+  slides.forEach(function(s,j){s.classList.toggle("on",j===cur);});
+  Array.prototype.forEach.call(rail.children,function(b,j){b.setAttribute("aria-current",j===cur?"true":"false");});
+  counter.textContent=(cur+1)+" / "+slides.length;
+}
+document.getElementById("prev").addEventListener("click",function(){go(cur-1);});
+document.getElementById("next").addEventListener("click",function(){go(cur+1);});
+document.addEventListener("keydown",function(e){
+  var t=e.target.tagName;
+  if(t==="INPUT"&&e.target.type==="text")return;
+  if(t==="INPUT"&&e.target.type==="range"&&(e.key==="ArrowLeft"||e.key==="ArrowRight"))return;
+  if(e.key==="ArrowRight"||e.key==="PageDown"||e.key===" "){go(cur+1);e.preventDefault();}
+  else if(e.key==="ArrowLeft"||e.key==="PageUp"){go(cur-1);e.preventDefault();}
+  else if(e.key==="Home")go(0); else if(e.key==="End")go(slides.length-1);
+});
+go(0);
+})();
+</script>
+</body>
+</html>
