@@ -1,0 +1,1413 @@
+<title>Profit Maximization Under Competition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ink:#16211E; --ink-soft:#44544F; --ink-faint:#7C8C87;
+  --paper:#F2F4F3; --surface:#FFFFFF; --surface-2:#E7EBE9;
+  --rule:#CBD4D1; --rule-soft:#DFE5E3;
+  --crude:#C47418; --crude-soft:#F0DCBE;
+  --brine:#3F7A72; --brine-soft:#D7E6E3;
+  --gain:#2E7D52; --gain-fill:rgba(46,125,82,.16);
+  --loss:#B5432F; --loss-fill:rgba(181,67,47,.16);
+  --stage:#FFFFFF; --shadow:0 1px 2px rgba(22,33,30,.06),0 10px 34px rgba(22,33,30,.10);
+}
+:root:not([data-theme="light"]) { color-scheme: light dark; }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#E7EDEA; --ink-soft:#A6B5B0; --ink-faint:#74857F;
+    --paper:#0E1A17; --surface:#16241F; --surface-2:#1E302A;
+    --rule:#2E443D; --rule-soft:#243730;
+    --crude:#E0A050; --crude-soft:#3B2E18;
+    --brine:#7FB8AF; --brine-soft:#1B312D;
+    --gain:#5FBE8A; --gain-fill:rgba(95,190,138,.18);
+    --loss:#E2836C; --loss-fill:rgba(226,131,108,.18);
+    --stage:#13201C; --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 40px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#E7EDEA; --ink-soft:#A6B5B0; --ink-faint:#74857F;
+  --paper:#0E1A17; --surface:#16241F; --surface-2:#1E302A;
+  --rule:#2E443D; --rule-soft:#243730;
+  --crude:#E0A050; --crude-soft:#3B2E18;
+  --brine:#7FB8AF; --brine-soft:#1B312D;
+  --gain:#5FBE8A; --gain-fill:rgba(95,190,138,.18);
+  --loss:#E2836C; --loss-fill:rgba(226,131,108,.18);
+  --stage:#13201C; --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 40px rgba(0,0,0,.45);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Sans 3",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  margin:0; min-height:100vh; display:flex; flex-direction:column;
+}
+h1,h2,h3{font-family:Spectral,Georgia,"Times New Roman",serif; font-weight:600; text-wrap:balance; margin:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+/* ---------- shell ---------- */
+.shell{flex:1; display:flex; flex-direction:column; min-height:0; padding:14px 16px 0}
+.stagewrap{flex:1; display:flex; align-items:center; justify-content:center; min-height:0}
+.stage{
+  container-type:inline-size;
+  width:100%; max-width:1420px; aspect-ratio:16/9; max-height:calc(100vh - 118px);
+  background:var(--stage); border:1px solid var(--rule-soft); border-radius:3px;
+  box-shadow:var(--shadow); position:relative; overflow:hidden;
+}
+.slide{position:absolute; inset:0; padding:4.2cqi 5cqi 4.4cqi; display:none; flex-direction:column; gap:2.2cqi}
+.slide.on{display:flex}
+.slide[data-pad="tight"]{padding:3.2cqi 4cqi 3.4cqi; gap:1.6cqi}
+
+/* ---------- slide furniture ---------- */
+.eyebrow{
+  font-size:1.18cqi; letter-spacing:.17em; text-transform:uppercase; font-weight:700;
+  color:var(--crude); display:flex; gap:.9em; align-items:baseline;
+}
+.eyebrow .q{color:var(--ink-faint); letter-spacing:.17em}
+.stitle{font-size:4.1cqi; line-height:1.08; letter-spacing:-.01em}
+.slide[data-pad="tight"] .stitle{font-size:3.3cqi}
+.lede{font-size:2.05cqi; line-height:1.45; color:var(--ink-soft); max-width:46ch}
+.body{display:flex; flex-direction:column; gap:1.1cqi; font-size:1.95cqi; line-height:1.42}
+.body li{margin:0}
+ul.body{list-style:none; padding:0}
+ul.body li{position:relative; padding-left:1.5em}
+ul.body li::before{content:""; position:absolute; left:.2em; top:.62em; width:.5em; height:.5em; background:var(--crude); border-radius:50%}
+ul.body li ul{list-style:none; padding:.5em 0 0 0; display:flex; flex-direction:column; gap:.45em; font-size:.88em; color:var(--ink-soft)}
+ul.body li ul li::before{width:.42em; height:.42em; background:none; border:1px solid var(--brine); top:.55em}
+.content{flex:1; display:flex; gap:3cqi; min-height:0}
+.col{flex:1; display:flex; flex-direction:column; gap:1.6cqi; min-width:0}
+.col.narrow{flex:0 0 32cqi}
+.col.wide{flex:1.5}
+
+/* ---------- definition cards ---------- */
+.defs{display:flex; flex-direction:column; gap:1.3cqi}
+.defgrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.3cqi}
+.def{background:var(--surface-2); border-radius:2px; padding:1.5cqi 1.8cqi; display:flex; flex-direction:column; gap:.5cqi}
+.def dt{font-family:Spectral,Georgia,serif; font-weight:700; font-size:2cqi; color:var(--ink)}
+.def dd{margin:0; font-size:1.72cqi; line-height:1.38; color:var(--ink-soft)}
+.def .eq{font-family:"IBM Plex Mono",monospace; font-size:1.6cqi; color:var(--crude); font-weight:500; letter-spacing:.02em}
+
+.formula{margin:0; font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:2.9cqi; font-weight:500;
+  color:var(--ink); display:flex; align-items:baseline; gap:.75em; flex-wrap:wrap; font-variant-numeric:tabular-nums}
+.formula b{color:var(--crude); font-weight:600; font-size:1.18em; line-height:1}
+.formula small{font-family:"Source Sans 3",sans-serif; font-size:1.3cqi; letter-spacing:.14em;
+  text-transform:uppercase; font-weight:700; color:var(--ink-faint)}
+
+/* ---------- numbered question cards ---------- */
+.qcards{display:grid; grid-template-columns:repeat(3,1fr); gap:2cqi; flex:1; align-content:center}
+.qcard{display:flex; flex-direction:column; gap:1cqi; padding-top:1.4cqi; border-top:2px solid var(--crude)}
+.qcard .n{font-family:"IBM Plex Mono",monospace; font-size:1.3cqi; color:var(--crude); font-weight:600; letter-spacing:.14em}
+.qcard h3{font-size:2.5cqi; line-height:1.15}
+.qcard p{margin:0; font-size:1.72cqi; line-height:1.4; color:var(--ink-soft)}
+
+/* ---------- controls ---------- */
+.panel{background:var(--surface-2); border-radius:2px; padding:1.6cqi 1.8cqi; display:flex; flex-direction:column; gap:1.2cqi}
+.ctrl{display:flex; flex-direction:column; gap:.55cqi}
+.ctrl label{font-size:1.2cqi; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--ink-faint)}
+.ctrl .val{font-family:"IBM Plex Mono",monospace; font-size:2.6cqi; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums}
+input[type=range]{
+  -webkit-appearance:none; appearance:none; width:100%; height:1.5cqi; background:transparent; cursor:pointer; margin:0;
+}
+input[type=range]::-webkit-slider-runnable-track{height:.45cqi; background:var(--rule); border-radius:1px}
+input[type=range]::-moz-range-track{height:.45cqi; background:var(--rule); border-radius:1px}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:1.9cqi; height:1.9cqi; border-radius:50%; background:var(--crude);
+  border:.35cqi solid var(--stage); box-shadow:0 0 0 1px var(--crude); margin-top:-.75cqi;
+}
+input[type=range]::-moz-range-thumb{
+  width:1.9cqi; height:1.9cqi; border-radius:50%; background:var(--crude); border:.35cqi solid var(--stage); box-shadow:0 0 0 1px var(--crude);
+}
+input[type=range]:focus-visible{outline:2px solid var(--brine); outline-offset:4px}
+.readout{display:grid; grid-template-columns:auto 1fr; gap:.45cqi 1.2cqi; font-size:1.75cqi; align-items:baseline}
+.readout dt{color:var(--ink-faint); font-size:1.5cqi; letter-spacing:.06em}
+.readout dd{margin:0; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-weight:500}
+.verdict{font-size:1.85cqi; line-height:1.36; padding:1.1cqi 1.3cqi; border-radius:2px; background:var(--surface); color:var(--ink)}
+.verdict strong{font-family:Spectral,Georgia,serif}
+.verdict[data-tone="gain"]{box-shadow:inset 0 0 0 1px var(--gain); color:var(--ink)}
+.verdict[data-tone="loss"]{box-shadow:inset 0 0 0 1px var(--loss)}
+.verdict[data-tone="flat"]{box-shadow:inset 0 0 0 1px var(--crude)}
+.btnrow{display:flex; gap:.8cqi; flex-wrap:wrap}
+button.b{
+  font-family:"Source Sans 3",sans-serif; font-size:1.45cqi; font-weight:600; letter-spacing:.02em;
+  padding:.7cqi 1.3cqi; border-radius:2px; border:1px solid var(--rule); background:var(--surface);
+  color:var(--ink); cursor:pointer;
+}
+button.b:hover{border-color:var(--crude); color:var(--crude)}
+button.b[aria-pressed="true"]{background:var(--crude); border-color:var(--crude); color:#fff}
+:root[data-theme="dark"] button.b[aria-pressed="true"], :root:not([data-theme="light"]) button.b[aria-pressed="true"]{color:#14221D}
+button.b:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+
+/* ---------- figure ---------- */
+.fig{flex:1; display:flex; flex-direction:column; gap:.7cqi; min-height:0}
+.fig svg{width:100%; height:100%; display:block; flex:1; min-height:0; overflow:visible}
+.figcap{font-size:1.35cqi; color:var(--ink-faint); line-height:1.35}
+.legend{display:flex; gap:1.6cqi; flex-wrap:wrap; font-size:1.4cqi; color:var(--ink-soft)}
+.legend span{display:flex; align-items:center; gap:.5em}
+.swatch{width:1.5em; height:.28em; border-radius:1px; display:inline-block}
+.swatch-hatch{height:.85em; border:1px solid var(--loss);
+  background:repeating-linear-gradient(45deg,var(--loss) 0 1px,transparent 1px 4px),var(--loss-fill)}
+.figpair{display:flex; gap:2cqi; flex:1; min-height:0}
+.figpair>svg{flex:1 1 0; width:auto; min-width:0}
+.slide[data-figs="pair"] .content{gap:2.2cqi}
+.slide[data-figs="pair"] .col.narrow{flex:0 0 25cqi}
+.slide[data-figs="pair"] .panel{padding:1.1cqi 1.2cqi; gap:.9cqi}
+.slide[data-figs="pair"] .ctrl .val{font-size:2.1cqi}
+.slide[data-figs="pair"] .ctrl label{font-size:1.05cqi}
+.slide[data-figs="pair"] .readout{font-size:1.5cqi; gap:.3cqi .8cqi}
+.slide[data-figs="pair"] .readout dt{font-size:1.28cqi}
+.slide[data-figs="pair"] .verdict{font-size:1.5cqi; padding:.85cqi 1cqi}
+.slide[data-figs="pair"] ul.body{font-size:1.62cqi; gap:.85cqi}
+.slide[data-figs="pair"] .def{padding:1.1cqi 1.2cqi}
+.slide[data-figs="pair"] .def dt{font-size:1.72cqi}
+.slide[data-figs="pair"] .def dd{font-size:1.46cqi}
+.slide[data-figs="pair"] button.b{font-size:1.25cqi; padding:.6cqi 1cqi}
+.slide[data-figs="pair"] .figcap{font-size:1.24cqi}
+
+/* ---------- data table ---------- */
+.tbl{width:100%; border-collapse:collapse; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:1.42cqi}
+.tbl th{
+  font-family:"Source Sans 3",sans-serif; font-size:1.18cqi; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-faint); font-weight:700; text-align:right; padding:.55cqi .6cqi; border-bottom:1px solid var(--rule);
+}
+.tbl th:first-child, .tbl td:first-child{text-align:left}
+.tbl td{padding:.5cqi .6cqi; border-bottom:1px solid var(--rule-soft); text-align:right; color:var(--ink-soft)}
+.tbl tr.hi td{background:var(--crude-soft); color:var(--ink); font-weight:600}
+.tbl tr.peak td:first-child::after{content:" \25C0"; color:var(--crude); font-size:.8em}
+.tbl input{
+  width:100%; font:inherit; text-align:right; background:var(--surface); color:var(--ink);
+  border:1px solid var(--rule); border-radius:2px; padding:.25cqi .4cqi;
+}
+.tbl input:focus-visible{outline:2px solid var(--brine); outline-offset:1px}
+.tbl input[data-state="ok"]{border-color:var(--gain); background:var(--gain-fill); color:var(--ink)}
+.tbl input[data-state="no"]{border-color:var(--loss); background:var(--loss-fill); color:var(--ink)}
+.given td{color:var(--ink)}
+
+/* ---------- market-structure spectrum ---------- */
+.spectrum{display:flex; flex-direction:column; gap:1cqi; flex:1; min-height:0}
+.spec-ends{display:flex; justify-content:space-between; font-size:1.12cqi; letter-spacing:.16em;
+  text-transform:uppercase; font-weight:700}
+.spec-ends .l{color:var(--brine)}
+.spec-ends .r{color:var(--loss)}
+.spec-axis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.6cqi;
+  position:relative; height:2.4cqi; align-items:center}
+.spec-axis::before{content:""; position:absolute; left:0; right:0; top:50%; height:.32cqi;
+  transform:translateY(-50%); border-radius:2px;
+  background:linear-gradient(90deg,var(--brine) 0%,var(--brine) 12%,var(--crude) 58%,var(--loss) 95%)}
+.spec-axis i{justify-self:center; position:relative; width:1.25cqi; height:1.25cqi; border-radius:50%;
+  background:var(--stage); border:.32cqi solid var(--ink-faint)}
+.spec-axis i[data-on]{border-color:var(--crude); box-shadow:0 0 0 .4cqi var(--crude-soft)}
+.spec-cols{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.6cqi; flex:1; min-height:0}
+.spec{display:flex; flex-direction:column; gap:.75cqi; min-width:0}
+.spec h3{font-size:1.95cqi; line-height:1.12}
+.spec[data-here] h3{color:var(--crude)}
+.spec .tag{font-family:"IBM Plex Mono",monospace; font-size:1.05cqi; letter-spacing:.12em;
+  font-weight:600; color:var(--crude)}
+.spec svg{width:100%; height:8.6cqi; display:block}
+.spec dl{display:grid; grid-template-columns:auto 1fr; gap:.3cqi .8cqi; margin:0; font-size:1.4cqi; align-items:baseline}
+.spec dt{color:var(--ink-faint); font-size:1.18cqi; letter-spacing:.07em; text-transform:uppercase; font-weight:700}
+.spec dd{margin:0; color:var(--ink-soft); line-height:1.3}
+.spec[data-here] dd{color:var(--ink)}
+
+/* ---------- takeaways ---------- */
+.takes{display:flex; flex-direction:column; gap:1.5cqi; flex:1; justify-content:center}
+.take{display:grid; grid-template-columns:14cqi 1fr; gap:2cqi; align-items:baseline; padding-bottom:1.5cqi; border-bottom:1px solid var(--rule-soft)}
+.take:last-child{border-bottom:none; padding-bottom:0}
+.take h3{font-size:2.1cqi; color:var(--crude); line-height:1.15}
+.take p{margin:0; font-size:1.9cqi; line-height:1.42; color:var(--ink-soft)}
+.take p em{color:var(--ink); font-style:normal; font-weight:600}
+
+/* ---------- title slide ---------- */
+.titleslide{justify-content:center; gap:0}
+.titleslide .kicker{font-size:1.4cqi; letter-spacing:.24em; text-transform:uppercase; color:var(--ink-faint); font-weight:700}
+.titleslide h1{font-size:6.4cqi; line-height:1.03; letter-spacing:-.02em; margin:2.2cqi 0 1.6cqi; max-width:20ch}
+.titleslide .sub{font-size:2.1cqi; color:var(--ink-soft); max-width:52ch; line-height:1.45}
+.titleslide .meta{margin-top:3.4cqi; font-size:1.45cqi; color:var(--ink-faint); display:flex; gap:1.2em; flex-wrap:wrap}
+.titleslide .meta b{color:var(--crude); font-weight:600}
+.derrick{position:absolute; right:4cqi; bottom:0; width:34cqi; height:76cqi; opacity:.9; pointer-events:none}
+
+/* ---------- section divider ---------- */
+.divider{justify-content:center; background:var(--ink); color:var(--paper)}
+.divider .num{font-family:"IBM Plex Mono",monospace; font-size:1.4cqi; letter-spacing:.2em; color:var(--crude); font-weight:600}
+.divider h2{font-size:5.2cqi; line-height:1.06; margin:1.6cqi 0 1.4cqi; max-width:22ch; color:var(--paper)}
+.divider p{margin:0; font-size:2cqi; line-height:1.45; color:#A6B5B0; max-width:48ch}
+
+/* ---------- nav ---------- */
+.nav{
+  display:flex; align-items:center; gap:14px; padding:10px 4px 12px; max-width:1420px;
+  margin:0 auto; width:100%; font-size:13px; color:var(--ink-faint);
+}
+.rail{flex:1; display:flex; gap:3px; align-items:stretch; height:16px}
+.rail button{
+  flex:1; border:none; padding:0; background:transparent; cursor:pointer; position:relative; min-width:0;
+}
+.rail button::after{content:""; position:absolute; left:0; right:0; top:7px; height:2px; background:var(--rule); transition:background .15s, height .15s, top .15s}
+.rail button[aria-current="true"]::after{background:var(--crude); height:4px; top:6px}
+.rail button:hover::after{background:var(--brine)}
+.rail button:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.counter{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; letter-spacing:.04em; white-space:nowrap}
+.navbtn{
+  border:1px solid var(--rule); background:var(--surface); color:var(--ink); border-radius:2px;
+  width:30px; height:30px; cursor:pointer; font-size:15px; line-height:1; display:grid; place-items:center;
+}
+.navbtn:hover{border-color:var(--crude); color:var(--crude)}
+.navbtn:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.hint{white-space:nowrap}
+@media (max-width:760px){ .hint{display:none} }
+
+@media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important} }
+
+@media print{
+  body{background:#fff}
+  .nav{display:none}
+  .shell{padding:0}
+  .stage{max-width:none; max-height:none; box-shadow:none; border:none; page-break-after:always}
+  .slide{display:flex !important; position:relative; page-break-after:always}
+  .stagewrap{display:block}
+}
+</style>
+
+<div class="shell">
+  <div class="stagewrap">
+    <div class="stage" id="stage">
+
+<!-- 1 -->
+<section class="slide titleslide on" data-label="Title">
+  <span class="kicker">Principles of Microeconomics &#183; Chapter 11</span>
+  <h1>Costs and Profit Maximization Under Competition</h1>
+  <p class="sub">Three decisions every producer faces &mdash; what price, what quantity, and whether to be in the industry at all &mdash; worked out on an oil field where price is the one thing you cannot choose.</p>
+  <div class="meta"><span><b>Running example:</b> a small oil producer at $50 / barrel</span><span><b>Drag</b> the sliders on the live diagrams</span></div>
+  <svg class="derrick" viewBox="0 0 160 360" aria-hidden="true">
+    <g fill="none" stroke="var(--rule)" stroke-width="1.6">
+      <path d="M30 352 L72 36 M130 352 L88 36 M30 352 L130 352"/>
+      <path d="M44 264 L116 264 M52 204 L108 204 M59 148 L101 148 M65 96 L95 96"/>
+      <path d="M44 264 L108 204 M116 264 L52 204 M52 204 L101 148 M108 204 L59 148 M59 148 L95 96 M101 148 L65 96"/>
+      <path d="M72 36 L88 36 L88 20 L72 20 Z"/>
+    </g>
+    <path d="M78 36 L78 300" stroke="var(--crude)" stroke-width="2.4" fill="none"/>
+    <circle cx="78" cy="300" r="5" fill="var(--crude)"/>
+  </svg>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-label="Three questions">
+  <div class="eyebrow"><span>Introduction</span></div>
+  <h2 class="stitle">Every producer answers three questions</h2>
+  <div class="qcards">
+    <div class="qcard"><span class="n">QUESTION 1</span><h3>What price to set?</h3><p>In a competitive industry the answer is handed to you: the market price. The interesting work is everything that follows from that.</p></div>
+    <div class="qcard"><span class="n">QUESTION 2</span><h3>What quantity to produce?</h3><p>Produce until the revenue from one more barrel equals the cost of that barrel &mdash; until <span class="mono">MR = MC</span>.</p></div>
+    <div class="qcard"><span class="n">QUESTION 3</span><h3>When to enter or exit?</h3><p>Compare price to average cost in the long run, and to average <em>variable</em> cost when deciding whether to run the pumps today.</p></div>
+  </div>
+  <p class="figcap">Answering all three for a competitive industry is what builds a supply curve.</p>
+</section>
+
+<!-- 3 -->
+<section class="slide divider" data-label="Part I">
+  <span class="num">PART ONE</span>
+  <h2>What price to set?</h2>
+  <p>A competitive firm is a price taker. Its own demand curve is flat at the market price, and that single fact drives the rest of the chapter.</p>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-pad="tight" data-figs="pair" data-label="Price takers">
+  <div class="eyebrow"><span>What price to set?</span><span class="q">Price takers</span></div>
+  <h2 class="stitle">You can sell all you want &mdash; but only at $50</h2>
+  <div class="content">
+    <div class="col narrow">
+      <ul class="body">
+        <li>The firm <strong>accepts</strong> the price the market determines.</li>
+        <li>It can sell <strong>all</strong> its output at that price.</li>
+        <li>It can sell <strong>nothing</strong> above that price.</li>
+        <li>It has no reason to go below it &mdash; it can already sell everything.</li>
+      </ul>
+      <div class="def"><dt>Perfectly elastic demand</dt><dd>The firm&rsquo;s own demand curve is horizontal at the market price, even though <em>market</em> demand slopes down.</dd></div>
+    </div>
+    <div class="col wide">
+      <div class="fig"><div class="figpair"><svg id="fig-market" role="img" aria-label="World market for oil: downward market demand crosses upward market supply at $50 and 82 million barrels."></svg><svg id="fig-firm" role="img" aria-label="Demand for your oil: a horizontal line at $50 across quantities of 1 to 10 barrels."></svg></div>
+      <p class="figcap">A producer selling 10 barrels out of 82,000,000 is invisible to the market price. Its slice of the demand curve is flat.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-pad="tight" data-label="Market structure">
+  <div class="eyebrow"><span>What price to set?</span><span class="q">Market structure</span></div>
+  <h2 class="stitle">Competition is a spectrum &mdash; this chapter sits at one end</h2>
+  <div class="spectrum">
+    <div class="spec-ends"><span class="l">&#9664;&ensp;Most competitive</span><span class="r">Least competitive&ensp;&#9654;</span></div>
+    <div class="spec-axis"><i data-on="true"></i><i></i><i></i><i></i></div>
+    <div class="spec-cols">
+    <div class="spec" data-here="true">
+      <h3>Perfect competition</h3>
+      <span class="tag">THIS CHAPTER</span>
+      <svg id="spec-0" role="img" aria-label="The firm&rsquo;s own demand curve under perfect competition"></svg>
+      <dl><dt>Sellers</dt><dd>Very many, each tiny</dd><dt>Product</dt><dd>Identical</dd><dt>Firm&rsquo;s demand</dt><dd>Horizontal at the market price</dd><dt>Price power</dt><dd>None &mdash; a pure price taker</dd></dl>
+    </div>
+    <div class="spec">
+      <h3>Monopolistic competition</h3>
+      <svg id="spec-1" role="img" aria-label="The firm&rsquo;s own demand curve under monopolistic competition"></svg>
+      <dl><dt>Sellers</dt><dd>Many</dd><dt>Product</dt><dd>Differentiated</dd><dt>Firm&rsquo;s demand</dt><dd>Gently downward sloping</dd><dt>Price power</dt><dd>A little &mdash; raise price, lose some buyers but not all</dd></dl>
+    </div>
+    <div class="spec">
+      <h3>Oligopoly</h3>
+      <svg id="spec-2" role="img" aria-label="The firm&rsquo;s own demand curve under oligopoly"></svg>
+      <dl><dt>Sellers</dt><dd>Only a few</dd><dt>Product</dt><dd>Identical or differentiated</dd><dt>Firm&rsquo;s demand</dt><dd>Downward, and shifts with rivals&rsquo; moves</dd><dt>Price power</dt><dd>Substantial, but checked by rivals</dd></dl>
+    </div>
+    <div class="spec">
+      <h3>Monopoly</h3>
+      <svg id="spec-3" role="img" aria-label="The firm&rsquo;s own demand curve under monopoly"></svg>
+      <dl><dt>Sellers</dt><dd>One</dd><dt>Product</dt><dd>No close substitutes</dd><dt>Firm&rsquo;s demand</dt><dd>The entire market demand curve</dd><dt>Price power</dt><dd>Maximum &mdash; a price maker</dd></dl>
+    </div>
+    </div>
+  </div>
+  <p class="figcap">What moves you along the spectrum is how much influence a single firm has over price &mdash; which you can read straight off the slope of the demand curve it faces. Real industries rarely sit exactly at either end; &ldquo;competitive&rdquo; just means firms don&rsquo;t have <em>much</em> influence.</p>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-label="Competitive conditions">
+  <div class="eyebrow"><span>What price to set?</span><span class="q">Conditions &amp; time horizon</span></div>
+  <h2 class="stitle">When is an industry competitive?</h2>
+  <div class="content">
+    <div class="col">
+      <ul class="body">
+        <li>The product is <strong>similar across sellers</strong>.</li>
+        <li>There are <strong>many buyers and sellers</strong>, each small relative to the total market.</li>
+        <li>There are <strong>many potential sellers</strong> &mdash; the ones not yet in the industry discipline price too.</li>
+        <li>Market demand is most elastic <strong>in the long run</strong>.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="defs">
+        <div class="def"><dt>Short run</dt><dd>The time period before exit or entry can occur.</dd></div>
+        <div class="def"><dt>Long run</dt><dd>The time after all exit or entry has occurred.</dd></div>
+      </div>
+      <p class="figcap">These two horizons are doing real work later: fixed costs are unavoidable in the short run and fully avoidable in the long run.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide divider" data-label="Part II">
+  <span class="num">PART TWO</span>
+  <h2>What quantity to produce?</h2>
+  <p>Profit is total revenue minus total cost. There are two ways to find its maximum &mdash; and one of them generalizes to everything else in economics.</p>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-label="Which costs count">
+  <div class="eyebrow"><span>Maximizing profit</span><span class="q">Which costs count</span></div>
+  <h2 class="stitle">Ignore what you can&rsquo;t change</h2>
+  <p class="lede">The general principle of rational choice: focus only on what your decision can actually move.</p>
+  <div class="defgrid">
+    <div class="def"><dt>Sunk cost</dt><dd>A cost that cannot be recovered. Sunk costs are never relevant, because no choice you make now can change them.</dd></div>
+    <div class="def"><dt>Fixed cost</dt><dd>A cost that does not vary with the quantity produced. Unchangeable by short-run choices &mdash; so ignore it in the short run; changeable in the long run &mdash; so focus on it there.</dd></div>
+    <div class="def"><dt>Variable cost</dt><dd>A cost that varies with output. The cost of the next barrel is always a variable cost.</dd></div>
+    <div class="def"><dt>Total cost</dt><dd>Everything it takes to produce a given quantity.<span class="eq">TC = FC + VC</span></dd></div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-label="Economic profit">
+  <div class="eyebrow"><span>Maximizing profit</span><span class="q">Accounting vs. economic profit</span></div>
+  <h2 class="stitle">Accountants miss the costs no one invoices</h2>
+  <div class="content">
+    <div class="col narrow">
+      <div class="defs">
+        <div class="def"><dt>Explicit cost</dt><dd>A cost that requires a money outlay.</dd></div>
+        <div class="def"><dt>Implicit cost</dt><dd>A cost with no outlay of money &mdash; an opportunity cost.</dd></div>
+      </div>
+    </div>
+    <div class="col">
+      <ul class="body">
+        <li>Maximizing profit means counting <strong>both</strong> &mdash; including the value of the alternatives you gave up.</li>
+        <li>Accountants typically don&rsquo;t count every opportunity cost, so <strong>accounting profit usually exceeds economic profit</strong>.</li>
+        <li>Economic profit asks whether this is the firm&rsquo;s <strong>best use of its assets</strong>. That is the number a firm wants to maximize.</li>
+      </ul>
+      <div class="defgrid">
+        <div class="def"><dt>Accounting profit</dt><dd><span class="eq">TR &minus; explicit costs</span></dd></div>
+        <div class="def"><dt>Economic profit</dt><dd><span class="eq">TR &minus; (explicit + implicit)</span></dd></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-pad="tight" data-label="Two methods">
+  <div class="eyebrow"><span>What quantity to produce?</span><span class="q">Two methods</span></div>
+  <h2 class="stitle">Two ways to maximize the gap between TR and TC</h2>
+  <p class="formula"><b>&pi;</b> = TR &minus; TC <small>profit = total revenue &minus; total cost</small></p>
+  <div class="content">
+    <div class="qcard"><span class="n">METHOD 1 &mdash; TOTALS</span><h3>Find the quantity with the biggest TR &minus; TC</h3><p>Compute TR and TC at every quantity and read off the widest gap. Correct &mdash; but it tells you nothing about <em>why</em> &pi; peaks where it does.</p></div>
+    <div class="qcard"><span class="n">METHOD 2 &mdash; MARGINS</span><h3>Compare the next barrel&rsquo;s revenue to its cost</h3><p>Keep going while one more barrel adds more to TR than to TC. The barrel where that stops is the one that maximizes &pi;. This is the method that generalizes.</p></div>
+  </div>
+  <div class="defgrid" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+    <div class="def"><dt>Total revenue</dt><dd>Price times quantity sold.<span class="eq">TR = P &times; Q</span></dd></div>
+    <div class="def"><dt>Marginal revenue</dt><dd>The change in TR from selling one more unit. For a competitive firm, <strong>MR = P</strong>.<span class="eq">MR = &Delta;TR / &Delta;Q</span></dd></div>
+    <div class="def"><dt>Marginal cost</dt><dd>The change in TC from producing one more unit.<span class="eq">MC = &Delta;TC / &Delta;Q</span></dd></div>
+  </div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-pad="tight" data-label="Live: the table">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag quantity</span></div>
+  <h2 class="stitle">Should you pump one more barrel?</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig"><div id="tbl-oil"></div></div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-q">Barrels produced</label>
+          <span class="val" id="s-q-val">0</span>
+          <input type="range" id="s-q" min="0" max="10" step="1" value="0" aria-label="Barrels of oil produced">
+        </div>
+        <dl class="readout">
+          <dt>Total revenue</dt><dd id="r-tr">$0</dd>
+          <dt>Total cost</dt><dd id="r-tc">$30</dd>
+          <dt>Profit</dt><dd id="r-pi">&minus;$30</dd>
+          <dt>MR of next</dt><dd id="r-mr">&mdash;</dd>
+          <dt>MC of next</dt><dd id="r-mc">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-table" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-pad="tight" data-label="Live: MR = MC">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag quantity</span></div>
+  <h2 class="stitle">Every barrel under the line adds profit</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-mrmc" role="img" aria-label="Marginal revenue flat at $50 and rising marginal cost; the shaded area between them up to the chosen quantity is accumulated profit."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--crude)"></i>MR = P = $50</span><span><i class="swatch" style="background:var(--brine)"></i>MC</span><span><i class="swatch" style="background:var(--gain)"></i>Profit added &mdash; MR &gt; MC</span><span><i class="swatch swatch-hatch"></i>Profit destroyed &mdash; MC &gt; MR</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-q2">Barrels produced</label>
+          <span class="val" id="s-q2-val">0</span>
+          <input type="range" id="s-q2" min="0" max="10" step="1" value="0" aria-label="Barrels of oil produced">
+        </div>
+        <dl class="readout">
+          <dt>Gain where MR &gt; MC</dt><dd id="r-gain">$0</dd>
+          <dt>Loss where MC &gt; MR</dt><dd id="r-dloss">$0</dd>
+          <dt>Fixed cost</dt><dd>&minus;$30</dd>
+          <dt>Profit</dt><dd id="r-pi2">&minus;$30</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-mrmc" data-tone="flat">&mdash;</div>
+      <p class="figcap">Profit is the running total of (MR &minus; MC) across every barrel, less fixed cost. It peaks exactly where the two curves cross.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-pad="tight" data-label="Live: firm supply">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag price</span></div>
+  <h2 class="stitle">P = MC <em>is</em> the firm&rsquo;s supply curve</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-supply" role="img" aria-label="A rising marginal cost curve with a horizontal price line; as price rises the profit-maximizing quantity traces out the marginal cost curve itself."></svg>
+        <p class="figcap">Raise the price and the firm expands until P = MC again. Every price you pick leaves a dot &mdash; and the dots are the marginal cost curve.</p>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-p1">Market price &nbsp;$/barrel</label>
+          <span class="val" id="s-p1-val">$9.00</span>
+          <input type="range" id="s-p1" min="9" max="42" step="0.5" value="9" aria-label="Market price per barrel">
+        </div>
+        <dl class="readout">
+          <dt>Quantity where P = MC</dt><dd id="r-qs">&mdash;</dd>
+          <dt>Total revenue</dt><dd id="r-trs">&mdash;</dd>
+          <dt>Total cost</dt><dd id="r-tcs">&mdash;</dd>
+          <dt>Profit</dt><dd id="r-pis">&mdash;</dd>
+        </dl>
+        <div class="btnrow"><button class="b" id="b-trail">Clear the trail</button></div>
+      </div>
+      <div class="verdict" id="v-supply" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<!-- 14 -->
+<section class="slide divider" data-label="Part III">
+  <span class="num">PART THREE</span>
+  <h2>Profits and the average cost curve</h2>
+  <p>A firm can maximize profit and still be losing money. To see profitability on a diagram, you need cost <em>per unit</em>.</p>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-label="Average cost">
+  <div class="eyebrow"><span>Average cost</span><span class="q">Definitions</span></div>
+  <h2 class="stitle">Profit = (P &minus; AC) &times; Q</h2>
+  <p class="lede">Average profit per unit, times the number of units. The whole profit diagram is one rectangle.</p>
+  <div class="defgrid">
+    <div class="def"><dt>Average cost (AC or ATC)</dt><dd>Total cost per unit.<span class="eq">AC = TC / Q</span></dd></div>
+    <div class="def"><dt>Average variable cost (AVC)</dt><dd>Variable cost per unit.<span class="eq">AVC = TVC / Q</span></dd></div>
+    <div class="def"><dt>Average fixed cost (AFC)</dt><dd>Fixed cost per unit &mdash; always falling, since a fixed number is spread over more units.<span class="eq">AFC = TFC / Q</span></dd></div>
+    <div class="def"><dt>Where MC meets the averages</dt><dd>MC cuts both AVC and AC at their minimums. Above the average it pulls the average up; below it, down.</dd></div>
+  </div>
+  <p class="figcap">At the oil firm&rsquo;s profit-maximizing 8 barrels, AC = $206 / 8 = $25.75, so profit = ($50 &minus; $25.75) &times; 8 = $194 &mdash; the same number the table gave.</p>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-pad="tight" data-label="Live: profit rectangle">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag price</span></div>
+  <h2 class="stitle">The profit rectangle, and how it flips</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-rect" role="img" aria-label="Marginal cost, average total cost and average variable cost curves with a price line; the rectangle between price and average cost out to the profit-maximizing quantity is shaded as profit or loss."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--brine)"></i>MC</span><span><i class="swatch" style="background:var(--ink-soft)"></i>ATC</span><span><i class="swatch" style="background:var(--ink-faint)"></i>AVC</span><span><i class="swatch" style="background:var(--crude)"></i>Price = MR</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-p2">Market price &nbsp;$/barrel</label>
+          <span class="val" id="s-p2-val">$9.00</span>
+          <input type="range" id="s-p2" min="9" max="42" step="0.5" value="9" aria-label="Market price per barrel">
+        </div>
+        <dl class="readout">
+          <dt>Quantity (P = MC)</dt><dd id="r-q2">&mdash;</dd>
+          <dt>Average cost</dt><dd id="r-ac2">&mdash;</dd>
+          <dt>Profit per unit</dt><dd id="r-ppu">&mdash;</dd>
+          <dt>Total profit</dt><dd id="r-tp">&mdash;</dd>
+        </dl>
+        <div class="btnrow">
+          <button class="b" data-setp="13">Shut&nbsp;down</button>
+          <button class="b" data-setp="20.41">Break&nbsp;even</button>
+          <button class="b" data-setp="34">Profit</button>
+        </div>
+      </div>
+      <div class="verdict" id="v-rect" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-pad="tight" data-label="Practice table">
+  <div class="eyebrow"><span>Practice</span><span class="q">Fill in the blanks</span></div>
+  <h2 class="stitle">Fill in the cost table</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig"><div id="tbl-practice"></div></div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <p class="figcap" style="font-size:1.6cqi; color:var(--ink-soft)">Hint: fixed cost stays the same at every quantity &mdash; and <span class="mono">TC = FC + VC</span>, <span class="mono">MC = &Delta;TC</span>.</p>
+        <div class="btnrow">
+          <button class="b" id="b-check">Check answers</button>
+          <button class="b" id="b-reveal">Show answers</button>
+          <button class="b" id="b-clear">Clear</button>
+        </div>
+      </div>
+      <div class="verdict" id="v-practice" data-tone="flat">Type a value in any blank cell, then check.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 18 -->
+<section class="slide divider" data-label="Part IV">
+  <span class="num">PART FOUR</span>
+  <h2>Entry, exit, and industry supply curves</h2>
+  <p>Profit maximization explains one firm. Entry and exit explain the price &mdash; and the shape of the industry&rsquo;s supply curve.</p>
+</section>
+
+<!-- 19 -->
+<section class="slide" data-label="Enter and exit">
+  <div class="eyebrow"><span>Entry, exit, shutdown</span><span class="q">The long run</span></div>
+  <h2 class="stitle">Zero profit means normal profit</h2>
+  <div class="content">
+    <div class="col">
+      <ul class="body">
+        <li>Firms <strong>enter</strong> when P &gt; AC.</li>
+        <li>Firms <strong>exit</strong> when P &lt; AC.</li>
+        <li>When <strong>P = AC</strong>, profits are zero and nobody has a reason to move.</li>
+      </ul>
+      <div class="def"><dt>&ldquo;Zero&rdquo; profit isn&rsquo;t nothing</dt><dd>Zero economic profit means the price is <em>just enough</em> to pay labor and capital their opportunity costs. Everyone is earning exactly what they could earn elsewhere &mdash; a normal profit.</dd></div>
+    </div>
+    <div class="col">
+      <ul class="body">
+        <li>Exit usually <strong>cannot happen immediately</strong>. In the short run the firm owes its fixed costs whether it operates or not.</li>
+        <li>So fixed costs <strong>don&rsquo;t influence short-run decisions</strong> at all.</li>
+        <li>The firm should shut the pumps off <em>today</em> only if <strong>TR &lt; VC</strong> &mdash; if the revenue doesn&rsquo;t even cover the variable cost of producing.</li>
+      </ul>
+      <div class="def"><dt>Divide both sides by Q</dt><dd><span class="eq">TR &lt; VC &nbsp;&hArr;&nbsp; P &lt; AVC</span>Shut down when price falls below minimum average variable cost.</dd></div>
+    </div>
+  </div>
+</section>
+
+<!-- 20 -->
+<section class="slide" data-pad="tight" data-label="Live: three zones">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag price</span></div>
+  <h2 class="stitle">Produce, limp along, or shut the pumps off</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-zones" role="img" aria-label="Average variable cost and average total cost curves divide the price axis into three bands: shut down below minimum AVC, produce but exit between minimum AVC and minimum ATC, and stay or enter above minimum ATC."></svg>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-p3">Market price &nbsp;$/barrel</label>
+          <span class="val" id="s-p3-val">$6.00</span>
+          <input type="range" id="s-p3" min="6" max="42" step="0.5" value="6" aria-label="Market price per barrel">
+        </div>
+        <dl class="readout">
+          <dt>Minimum AVC</dt><dd class="mono">$13.00</dd>
+          <dt>Minimum AC</dt><dd class="mono">$20.41</dd>
+          <dt>Quantity</dt><dd id="r-q3">&mdash;</dd>
+          <dt>Profit</dt><dd id="r-pi3">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-zones" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<!-- 21 -->
+<section class="slide" data-pad="tight" data-figs="pair" data-label="Live: entry and exit">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag the number of firms</span></div>
+  <h2 class="stitle">Entry and exit push price to minimum AC</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig"><div class="figpair"><svg id="fig-mkt2" role="img" aria-label="Market demand and the industry supply curve built from the firms currently in the industry, meeting at the market price."></svg><svg id="fig-firm2" role="img" aria-label="The representative firm's cost curves with the market price line and its profit or loss rectangle."></svg></div></div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-n">Firms in the industry</label>
+          <span class="val" id="s-n-val">18</span>
+          <input type="range" id="s-n" min="8" max="64" step="1" value="18" aria-label="Number of firms in the industry">
+        </div>
+        <dl class="readout">
+          <dt>Market price</dt><dd id="r-pm">&mdash;</dd>
+          <dt>Industry output</dt><dd id="r-qm">&mdash;</dd>
+          <dt>Output per firm</dt><dd id="r-qf">&mdash;</dd>
+          <dt>Profit per firm</dt><dd id="r-pf">&mdash;</dd>
+        </dl>
+        <div class="btnrow"><button class="b" id="b-run">Run to the long run</button></div>
+      </div>
+      <div class="verdict" id="v-entry" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<!-- 22 -->
+<section class="slide" data-pad="tight" data-figs="pair" data-label="Increasing cost">
+  <div class="eyebrow"><span>Industry supply</span><span class="q">Increasing cost</span></div>
+  <h2 class="stitle">The cheap oil gets pumped first</h2>
+  <div class="content">
+    <div class="col narrow">
+      <div class="def"><dt>Increasing cost industry</dt><dd>Industry costs rise as industry output rises &mdash; shown by an upward-sloping supply curve.</dd></div>
+      <ul class="body">
+        <li>Greater quantities can be produced only with <strong>more expensive methods</strong>.</li>
+        <li>Any industry that buys a large fraction of an increasing cost industry&rsquo;s output <strong>inherits</strong> increasing costs.</li>
+      </ul>
+    </div>
+    <div class="col wide">
+      <div class="fig"><div class="figpair"><svg id="fig-cheap" role="img" aria-label="Firm 1 with oil near the surface has low cost curves."></svg><svg id="fig-deep" role="img" aria-label="Firm 2 with oil located deeper has higher cost curves."></svg></div>
+      <p class="figcap">Firm 1&rsquo;s oil is near the surface; Firm 2 has to drill deep. Firm 2 only enters when the price rises enough to cover <em>its</em> higher minimum average cost &mdash; which is why the industry supply curve slopes up.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 23 -->
+<section class="slide" data-label="Constant and decreasing cost">
+  <div class="eyebrow"><span>Industry supply</span><span class="q">Constant &amp; decreasing cost</span></div>
+  <h2 class="stitle">When expansion doesn&rsquo;t move costs at all</h2>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Constant cost industry</dt><dd>Industry costs don&rsquo;t change with output &mdash; a flat long-run supply curve.</dd></div>
+      <ul class="body">
+        <li>It meets the conditions for a competitive industry.</li>
+        <li>It demands only a <strong>small share of its major inputs</strong>, so it can expand or contract without moving input prices.</li>
+        <li>Price is driven down to AC, so profits are driven to <strong>normal</strong> levels &mdash; and price barely moves when the industry grows or shrinks.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="def"><dt>Decreasing cost industry</dt><dd>Industry costs <em>fall</em> as output rises &mdash; a downward-sloping supply curve. Rare.</dd></div>
+      <ul class="body">
+        <li>Clusters do this: as the industry grows, input suppliers move nearby and costs fall.
+          <ul><li>Dalton, Georgia &mdash; &ldquo;Carpet Capital of the World&rdquo;</li><li>Silicon Valley &mdash; computer technology</li></ul>
+        </li>
+        <li>The cost reductions are <strong>temporary</strong>. Once the cluster is established, constant or increasing costs are the norm.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 24 -->
+<section class="slide" data-pad="tight" data-label="Live: industry supply">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Pick an industry type</span></div>
+  <h2 class="stitle">Three industries, three long-run supply curves</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-ind" role="img" aria-label="Industry demand shifting out along an upward-sloping, flat, or downward-sloping long-run supply curve."></svg>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label>Industry type</label>
+          <div class="btnrow" id="ind-pick">
+            <button class="b" data-ind="inc" aria-pressed="true">Increasing cost</button>
+            <button class="b" data-ind="con" aria-pressed="false">Constant cost</button>
+            <button class="b" data-ind="dec" aria-pressed="false">Decreasing cost</button>
+          </div>
+        </div>
+        <div class="ctrl">
+          <label for="s-d">Demand</label>
+          <span class="val" id="s-d-val">Baseline</span>
+          <input type="range" id="s-d" min="0" max="100" step="1" value="30" aria-label="Industry demand shift">
+        </div>
+        <dl class="readout">
+          <dt>Long-run price</dt><dd id="r-plr">&mdash;</dd>
+          <dt>Industry quantity</dt><dd id="r-qlr">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-ind" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<!-- 25 -->
+<section class="slide" data-label="Takeaway">
+  <div class="eyebrow"><span>Takeaway</span></div>
+  <h2 class="stitle">What to carry out of Chapter 11</h2>
+  <div class="takes">
+    <div class="take"><h3>What price to set?</h3><p>In a competitive industry, the firm sets its price at <em>the market price</em>. It is a price taker.</p></div>
+    <div class="take"><h3>What quantity to produce?</h3><p>Produce the quantity that makes <em>P = MC</em>. Since MR = P for a competitive firm, that is the same as MR = MC.</p></div>
+    <div class="take"><h3>When to shut down?</h3><p>In the short run, shut down only if price is below <em>average variable cost</em>. Fixed costs are already sunk for today.</p></div>
+    <div class="take"><h3>When to enter or exit?</h3><p>In the long run, enter if <em>P &gt; AC</em> and exit if <em>P &lt; AC</em>. Entry and exit drive price toward minimum average cost.</p></div>
+    <div class="take"><h3>Why supply slopes</h3><p>Profit maximization plus entry and exit <em>are</em> the supply curve. Costs that rise with industry output give an upward slope; costs that don&rsquo;t give a flat one; and in rare clustered industries, costs fall and supply slopes down.</p></div>
+  </div>
+</section>
+
+</div>
+  </div>
+  <nav class="nav" aria-label="Slide navigation">
+    <button class="navbtn" id="prev" aria-label="Previous slide">&#8249;</button>
+    <button class="navbtn" id="next" aria-label="Next slide">&#8250;</button>
+    <div class="rail" id="rail" role="tablist" aria-label="Slides"></div>
+    <span class="counter" id="counter">1 / 1</span>
+    <span class="hint">&#8592; &#8594; to move &#183; drag any slider</span>
+  </nav>
+</div>
+
+<script>
+(function(){
+"use strict";
+var NS="http://www.w3.org/2000/svg";
+function E(n,a,t){var e=document.createElementNS(NS,n);for(var k in a){if(a[k]!==null&&a[k]!==undefined)e.setAttribute(k,a[k]);}if(t!==undefined)e.textContent=t;return e;}
+function money(v,d){var s=(d===undefined?0:d);return "$"+Number(v).toFixed(s);}
+var CSS=getComputedStyle(document.documentElement);
+function C(name){return "var("+name+")";}
+
+/* ---------------- plotting frame ---------------- */
+function Frame(svg,o){
+  var W=o.W||440,H=o.H||300,L=(o.L===undefined?48:o.L),R=(o.R===undefined?16:o.R),T=(o.T===undefined?16:o.T),B=(o.B===undefined?40:o.B);
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  var x0=o.x0||0,x1=o.x1,y0=o.y0||0,y1=o.y1;
+  var f={
+    svg:svg,W:W,H:H,L:L,R:R,T:T,B:B,x0:x0,x1:x1,y0:y0,y1:y1,
+    x:function(v){return L+(v-x0)/(x1-x0)*(W-L-R);},
+    y:function(v){return H-B-(v-y0)/(y1-y0)*(H-T-B);},
+    add:function(e){svg.appendChild(e);return e;}
+  };
+  f.left=L; f.right=W-R; f.top=T; f.bottom=H-B;
+  /* axes */
+  f.add(E("path",{d:"M"+L+" "+T+" L"+L+" "+(H-B)+" L"+(W-R)+" "+(H-B),fill:"none",stroke:C("--rule"),"stroke-width":1.2}));
+  if(o.xlabel)f.add(E("text",{x:(L+W-R)/2,y:H-6,fill:C("--ink-faint"),"font-size":11,"text-anchor":"middle","font-family":"'Source Sans 3',sans-serif"},o.xlabel));
+  if(o.ylabel)f.add(E("text",{x:-(T+H-B)/2,y:13,fill:C("--ink-faint"),"font-size":11,"text-anchor":"middle",transform:"rotate(-90)","font-family":"'Source Sans 3',sans-serif"},o.ylabel));
+  return f;
+}
+function curve(f,fn,a,b,stroke,width,dash){
+  var d="",n=120,i,q,v;
+  for(i=0;i<=n;i++){
+    q=a+(b-a)*i/n; v=fn(q);
+    if(!isFinite(v)||v>f.y1*1.4||v<f.y0-1){d="";continue;}
+    d+=(d===""?"M":"L")+f.x(q).toFixed(2)+" "+f.y(Math.min(v,f.y1)).toFixed(2);
+  }
+  return f.add(E("path",{d:d,fill:"none",stroke:stroke,"stroke-width":width||2,"stroke-linejoin":"round","stroke-linecap":"round","stroke-dasharray":dash||null}));
+}
+function hline(f,v,stroke,width,dash){return f.add(E("line",{x1:f.left,x2:f.right,y1:f.y(v),y2:f.y(v),stroke:stroke,"stroke-width":width||2,"stroke-dasharray":dash||null}));}
+function label(f,px,py,txt,fill,size,anchor,weight){
+  return f.add(E("text",{x:px,y:py,fill:fill,"font-size":size||11,"text-anchor":anchor||"start","font-weight":weight||600,"font-family":"'IBM Plex Mono',monospace"},txt));
+}
+function crosshair(f,qx,py){
+  f.add(E("path",{d:"M"+f.x(qx)+" "+f.bottom+" L"+f.x(qx)+" "+f.y(py),stroke:C("--crude"),"stroke-width":1.1,"stroke-dasharray":"3 3",fill:"none"}));
+  f.add(E("path",{d:"M"+f.left+" "+f.y(py)+" L"+f.x(qx)+" "+f.y(py),stroke:C("--crude"),"stroke-width":1.1,"stroke-dasharray":"3 3",fill:"none"}));
+  f.add(E("circle",{cx:f.x(qx),cy:f.y(py),r:3.6,fill:C("--crude")}));
+}
+function xticks(f,vals,fmt){
+  vals.forEach(function(v){
+    f.add(E("line",{x1:f.x(v),x2:f.x(v),y1:f.bottom,y2:f.bottom+4,stroke:C("--rule"),"stroke-width":1}));
+    f.add(E("text",{x:f.x(v),y:f.bottom+15,fill:C("--ink-faint"),"font-size":10,"text-anchor":"middle","font-family":"'IBM Plex Mono',monospace"},fmt?fmt(v):String(v)));
+  });
+}
+function yticks(f,vals,fmt){
+  vals.forEach(function(v){
+    f.add(E("line",{x1:f.left-4,x2:f.left,y1:f.y(v),y2:f.y(v),stroke:C("--rule"),"stroke-width":1}));
+    f.add(E("text",{x:f.left-7,y:f.y(v)+3.4,fill:C("--ink-faint"),"font-size":10,"text-anchor":"end","font-family":"'IBM Plex Mono',monospace"},fmt?fmt(v):String(v)));
+  });
+}
+
+/* ---------------- the oil-field table (textbook numbers) ---------------- */
+var P_OIL=50;
+var TC=[30,34,40,51,68,91,120,156,206,296,420];
+function tr(q){return P_OIL*q;}
+function mcOil(q){return TC[q]-TC[q-1];}
+
+/* ---------------- smooth cost model for the curve diagrams ----------------
+   FC = 50, VC(q) = q^3/3 - 4q^2 + 25q  ->  MC = q^2 - 8q + 25               */
+var FC=50;
+function mc(q){return q*q-8*q+25;}
+function vc(q){return q*q*q/3-4*q*q+25*q;}
+function avc(q){return q<=0?Infinity:vc(q)/q;}
+function atc(q){return q<=0?Infinity:(vc(q)+FC)/q;}
+function tc(q){return vc(q)+FC;}
+function qStar(P){return P<=9?0:4+Math.sqrt(P-9);}
+var MIN_AVC=13, Q_MIN_AVC=6;
+var Q_MIN_ATC=(function(){var lo=5,hi=12,m;for(var i=0;i<60;i++){m=(lo+hi)/2;if(atc(m+1e-4)>atc(m))hi=m;else lo=m;}return m;})();
+var MIN_ATC=atc(Q_MIN_ATC);
+
+/* =========================================================================
+   SLIDE 4 - price taker: market panel + firm panel
+   ========================================================================= */
+function drawPriceTaker(){
+  var m=document.getElementById("fig-market"); if(!m)return;
+  var f=Frame(m,{W:360,H:320,x1:130,y1:100,xlabel:"Quantity (millions of barrels)",ylabel:"Price per barrel"});
+  curve(f,function(q){return 95.1-0.55*q;},5,125,C("--ink-soft"),2);
+  curve(f,function(q){return 9+0.5*q;},5,125,C("--brine"),2);
+  crosshair(f,82,50);
+  label(f,f.x(82)-4,f.y(50)-10,"$50",C("--crude"),11,"end");
+  label(f,f.x(120),f.y(95.1-0.55*120)-7,"D",C("--ink-soft"),12,"middle");
+  label(f,f.x(120),f.y(9+0.5*120)-7,"S",C("--brine"),12,"middle");
+  xticks(f,[82],function(){return "82M";});
+  f.add(E("text",{x:f.left+6,y:f.top+12,fill:C("--ink-faint"),"font-size":11,"font-family":"'Source Sans 3',sans-serif","font-weight":700},"The world market for oil"));
+
+  var g=document.getElementById("fig-firm");
+  var f2=Frame(g,{W:360,H:320,x1:11,y1:100,xlabel:"Quantity (barrels)",ylabel:"Price per barrel"});
+  hline(f2,50,C("--crude"),2.4);
+  label(f2,f2.x(10.4),f2.y(50)-8,"d = MR = $50",C("--crude"),11,"end");
+  xticks(f2,[1,5,10]);
+  yticks(f2,[50],function(v){return "$"+v;});
+  f2.add(E("text",{x:f2.left+6,y:f2.top+12,fill:C("--ink-faint"),"font-size":11,"font-family":"'Source Sans 3',sans-serif","font-weight":700},"The demand for your oil"));
+}
+
+/* =========================================================================
+   SLIDE 5 - the market-structure spectrum: the demand curve each firm faces
+   ========================================================================= */
+function drawSpectrum(){
+  /* [slope of the firm's own demand, accent, caption] */
+  var kinds=[
+    [0.00,"--crude","flat"],
+    [0.28,"--ink-soft","gentle"],
+    [0.62,"--ink-soft","steeper"],
+    [1.00,"--loss","= market D"]
+  ];
+  kinds.forEach(function(k,i){
+    var svg=document.getElementById("spec-"+i); if(!svg)return;
+    var W=130,H=86,L=16,R=8,T=10,B=18;
+    svg.setAttribute("viewBox","0 0 "+W+" "+H);
+    while(svg.firstChild)svg.removeChild(svg.firstChild);
+    svg.appendChild(E("path",{d:"M"+L+" "+T+" L"+L+" "+(H-B)+" L"+(W-R)+" "+(H-B),
+      fill:"none",stroke:C("--rule"),"stroke-width":1.1}));
+    /* the firm's demand curve: same midpoint, increasing steepness */
+    var mid=(T+H-B)/2, drop=k[0]*((H-B)-T)*0.46;
+    var y1=mid-drop, y2=mid+drop;
+    svg.appendChild(E("path",{d:"M"+L+" "+y1.toFixed(1)+" L"+(W-R)+" "+y2.toFixed(1),
+      fill:"none",stroke:C(k[1]),"stroke-width":2.1,"stroke-linecap":"round"}));
+    svg.appendChild(E("text",{x:W-R-1,y:(y2+(k[0]>0.5?-4:-5)).toFixed(1),fill:C(k[1]),
+      "font-size":9,"text-anchor":"end","font-weight":600,
+      "font-family":"'IBM Plex Mono',monospace"},"d"));
+    svg.appendChild(E("text",{x:(L+W-R)/2,y:H-5,fill:C("--ink-faint"),"font-size":8.5,
+      "text-anchor":"middle","font-weight":600,
+      "font-family":"'Source Sans 3',sans-serif"},k[2]));
+    svg.appendChild(E("text",{x:-(T+H-B)/2,y:9,fill:C("--ink-faint"),"font-size":8,
+      "text-anchor":"middle",transform:"rotate(-90)",
+      "font-family":"'Source Sans 3',sans-serif"},"P"));
+    svg.appendChild(E("text",{x:W-R,y:H-B+9,fill:C("--ink-faint"),"font-size":8,
+      "text-anchor":"end","font-family":"'Source Sans 3',sans-serif"},"Q"));
+  });
+}
+
+/* =========================================================================
+   SLIDE 10 - live cost/revenue table
+   ========================================================================= */
+function buildOilTable(){
+  var host=document.getElementById("tbl-oil"); if(!host)return;
+  var h='<table class="tbl"><thead><tr><th>Barrels</th><th>TR</th><th>TC</th><th>Profit</th><th>MR</th><th>MC</th><th>&Delta; Profit</th></tr></thead><tbody>';
+  for(var q=0;q<=10;q++){
+    var pi=tr(q)-TC[q];
+    h+='<tr data-q="'+q+'"><td>'+q+'</td><td>'+tr(q)+'</td><td>'+TC[q]+'</td><td>'+(pi<0?"&minus;"+Math.abs(pi):pi)+'</td>';
+    h+= q===0 ? '<td>&mdash;</td><td>&mdash;</td><td>&mdash;</td>' :
+        '<td>'+P_OIL+'</td><td>'+mcOil(q)+'</td><td>'+(function(d){return d<0?"&minus;"+Math.abs(d):(d>0?"+"+d:"0");})(P_OIL-mcOil(q))+'</td>';
+    h+='</tr>';
+  }
+  host.innerHTML=h+'</tbody></table>';
+}
+function syncOilTable(q){
+  var rows=document.querySelectorAll('#tbl-oil tr[data-q]');
+  for(var i=0;i<rows.length;i++){rows[i].className=(Number(rows[i].dataset.q)===q)?"hi":"";}
+  var pi=tr(q)-TC[q];
+  document.getElementById("r-tr").textContent=money(tr(q));
+  document.getElementById("r-tc").textContent=money(TC[q]);
+  document.getElementById("r-pi").textContent=(pi<0?"\u2212$"+Math.abs(pi):"$"+pi);
+  var v=document.getElementById("v-table");
+  if(q<10){
+    var m=mcOil(q+1), gain=P_OIL-m;
+    document.getElementById("r-mr").textContent=money(P_OIL);
+    document.getElementById("r-mc").textContent=money(m);
+    if(gain>0){v.dataset.tone="gain";v.innerHTML="<strong>Pump it.</strong> Barrel "+(q+1)+" brings in $50 and costs $"+m+" &mdash; profit rises by $"+gain+".";}
+    else if(gain===0){v.dataset.tone="flat";v.innerHTML="<strong>Stop here.</strong> Barrel "+(q+1)+" costs exactly what it earns. Profit is at its maximum at "+q+" barrels, and MR = MC.";}
+    else{v.dataset.tone="loss";v.innerHTML="<strong>Don&rsquo;t.</strong> Barrel "+(q+1)+" costs $"+m+" and earns $50 &mdash; profit falls by $"+(-gain)+".";}
+  }else{
+    document.getElementById("r-mr").textContent="\u2014";
+    document.getElementById("r-mc").textContent="\u2014";
+    v.dataset.tone="loss";
+    v.innerHTML="<strong>Far past the optimum.</strong> The last two barrels cost $90 and $124 to earn $50 each. Profit has fallen from $194 to $80.";
+  }
+}
+
+/* =========================================================================
+   SLIDE 11 - MR vs MC, with the accumulated-profit area
+   ========================================================================= */
+function drawMRMC(q){
+  var svg=document.getElementById("fig-mrmc"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,x1:10.6,y1:135,xlabel:"Barrels of oil produced",ylabel:"Dollars per barrel"});
+
+  /* hatch for the barrels that destroy profit */
+  var defs=E("defs");
+  var pat=E("pattern",{id:"hatchloss",width:6,height:6,patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"});
+  pat.appendChild(E("rect",{width:6,height:6,fill:C("--loss-fill")}));
+  pat.appendChild(E("line",{x1:0,y1:0,x2:0,y2:6,stroke:C("--loss"),"stroke-width":1.6,opacity:.75}));
+  defs.appendChild(pat); f.add(defs);
+
+  /* everything past the crossing sits in a tinted band */
+  f.add(E("rect",{x:f.x(8),y:f.top,width:f.right-f.x(8),height:f.bottom-f.top,fill:C("--loss-fill"),opacity:.3}));
+
+  yticks(f,[50,100],function(v){return "$"+v;});
+  xticks(f,[1,2,3,4,5,6,7,8,9,10]);
+
+  var i,gain=0,dloss=0,blocks=[];
+  for(i=1;i<=10;i++){
+    var m=mcOil(i), x1=f.x(i-1), x2=f.x(i), within=i<=q;
+    var top=Math.min(50,m), bot=Math.max(50,m);
+    if(within && m!==50){
+      f.add(E("rect",{x:x1,y:f.y(bot),width:x2-x1,height:f.y(top)-f.y(bot),
+        fill:(m<50)?C("--gain-fill"):"url(#hatchloss)",
+        stroke:(m<50)?C("--gain"):C("--loss"),"stroke-width":1}));
+      blocks.push([(x1+x2)/2,(f.y(bot)+f.y(top))/2,(m<50?"+":"\u2212")+"$"+Math.abs(50-m),(m<50)?C("--gain"):C("--loss")]);
+      if(m<50)gain+=50-m; else dloss+=m-50;
+    }
+    f.add(E("rect",{x:x1,y:f.y(m),width:x2-x1,height:f.bottom-f.y(m),
+      fill:within?C("--brine-soft"):"none",stroke:C("--brine"),"stroke-width":1.1}));
+  }
+
+  hline(f,50,C("--crude"),2.4);
+  /* the crossing itself, always marked */
+  f.add(E("line",{x1:f.x(8),x2:f.x(8),y1:f.top,y2:f.bottom+6,stroke:C("--ink-soft"),"stroke-width":1.4}));
+  f.add(E("text",{x:f.x(8)-5,y:f.top+12,fill:C("--ink-soft"),"font-size":11,"text-anchor":"end","font-weight":700,"font-family":"'Source Sans 3',sans-serif"},"MR = MC"));
+  f.add(E("text",{x:(f.x(8)+f.right)/2,y:f.top+12,fill:C("--loss"),"font-size":11,"text-anchor":"middle","font-weight":700,"font-family":"'Source Sans 3',sans-serif"},"MC > MR"));
+  f.add(E("text",{x:(f.x(8)+f.right)/2,y:f.top+24,fill:C("--loss"),"font-size":10,"text-anchor":"middle","font-weight":600,"font-family":"'Source Sans 3',sans-serif"},"each barrel"));
+  f.add(E("text",{x:(f.x(8)+f.right)/2,y:f.top+35,fill:C("--loss"),"font-size":10,"text-anchor":"middle","font-weight":600,"font-family":"'Source Sans 3',sans-serif"},"loses money"));
+  label(f,f.x(8)-8,f.y(50)-7,"MR = P = $50",C("--crude"),11,"end");
+
+  /* per-barrel gain or loss, written on the block */
+  blocks.forEach(function(b){
+    f.add(E("text",{x:b[0],y:b[1]+3.6,fill:b[3],"font-size":10.5,"text-anchor":"middle","font-weight":600,"font-family":"'IBM Plex Mono',monospace"},b[2]));
+  });
+
+  if(q>0){
+    f.add(E("line",{x1:f.x(q),x2:f.x(q),y1:f.top,y2:f.bottom,stroke:C("--crude"),"stroke-width":1.2,"stroke-dasharray":"3 3"}));
+    f.add(E("text",{x:f.x(q),y:f.bottom+28,fill:C("--crude"),"font-size":11,"text-anchor":"middle","font-weight":600,"font-family":"'IBM Plex Mono',monospace"},"Q = "+q));
+  }
+
+  document.getElementById("r-gain").textContent=money(gain);
+  document.getElementById("r-dloss").textContent=(dloss?"\u2212$"+dloss:"$0");
+  var pi=tr(q)-TC[q];
+  document.getElementById("r-pi2").textContent=(pi<0?"\u2212$"+Math.abs(pi):"$"+pi);
+  var v=document.getElementById("v-mrmc");
+  if(q===8){v.dataset.tone="flat";v.innerHTML="<strong>Maximum profit, $194.</strong> Every green block has been collected and no hatched block has been taken on.";}
+  else if(q<8){v.dataset.tone="gain";v.innerHTML="<strong>Green left on the table.</strong> "+(8-q)+" more barrel"+(8-q>1?"s":"")+" still earn more than they cost.";}
+  else if(q===9){v.dataset.tone="loss";v.innerHTML="<strong>Barrel 9 is a marginal loss.</strong> It costs $90 to produce and earns $50 &mdash; so it hands back $40 of profit already earned. &pi; falls from $194 to $154.";}
+  else{v.dataset.tone="loss";v.innerHTML="<strong>Two marginal losses.</strong> Barrel 9 costs $90 and barrel 10 costs $124, each earning only $50 &mdash; &minus;$40 then &minus;$74. &pi; falls from $194 to $80.";}
+}
+
+/* =========================================================================
+   SLIDE 12 - P = MC traces the firm's supply curve
+   ========================================================================= */
+var trail=[];
+function drawSupply(P){
+  var svg=document.getElementById("fig-supply"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,x1:10.5,y1:44,xlabel:"Quantity (barrels)",ylabel:"Dollars per barrel"});
+  yticks(f,[10,20,30,40],function(v){return "$"+v;});
+  xticks(f,[2,4,6,8,10]);
+  curve(f,mc,0.2,10.3,C("--brine"),2.2);
+  label(f,f.x(10.3),f.y(mc(10.3))-6,"MC",C("--brine"),12,"end");
+  trail.forEach(function(p){ if(p[0]>0) f.add(E("circle",{cx:f.x(p[0]),cy:f.y(p[1]),r:2.6,fill:C("--crude"),opacity:.35})); });
+  hline(f,P,C("--crude"),2.2);
+  var q=qStar(P);
+  if(q>0){
+    crosshair(f,q,P);
+    label(f,f.x(q)+6,f.y(P)-8,"q* = "+q.toFixed(2),C("--crude"),11,"start");
+  }
+  label(f,f.left+6,f.y(P)-7,"P = MR = "+money(P,2),C("--crude"),11,"start");
+  var pi=q>0?(P*q-tc(q)):-FC;
+  document.getElementById("r-qs").textContent=q>0?q.toFixed(2)+" bbl":"0 bbl";
+  document.getElementById("r-trs").textContent=money(P*q,2);
+  document.getElementById("r-tcs").textContent=money(q>0?tc(q):FC,2);
+  document.getElementById("r-pis").textContent=(pi<0?"\u2212"+money(-pi,2):money(pi,2));
+  var v=document.getElementById("v-supply");
+  if(P>MIN_ATC){v.dataset.tone="gain";v.innerHTML="<strong>Expand.</strong> A higher price makes barrels that used to cost too much worth pumping &mdash; the firm moves up along MC.";}
+  else if(P>MIN_AVC){v.dataset.tone="loss";v.innerHTML="<strong>Still worth running.</strong> Price covers variable cost, so producing beats shutting down &mdash; but it doesn&rsquo;t cover average total cost.";}
+  else{v.dataset.tone="loss";v.innerHTML="<strong>Below minimum AVC ($13).</strong> Each barrel loses money before fixed costs are even counted. The supply curve stops here.";}
+}
+
+/* =========================================================================
+   SLIDE 15 - the profit rectangle
+   ========================================================================= */
+function drawRect(P){
+  var svg=document.getElementById("fig-rect"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,x1:10.5,y1:46,xlabel:"Quantity (barrels)",ylabel:"Dollars per barrel"});
+  yticks(f,[10,20,30,40],function(v){return "$"+v;});
+  xticks(f,[2,4,6,8,10]);
+  var q=qStar(P), ac=q>0?atc(q):Infinity;
+  if(q>0 && isFinite(ac)){
+    var top=Math.max(P,ac), bot=Math.min(P,ac);
+    f.add(E("rect",{x:f.left,y:f.y(top),width:f.x(q)-f.left,height:f.y(bot)-f.y(top),fill:P>=ac?C("--gain-fill"):C("--loss-fill"),stroke:P>=ac?C("--gain"):C("--loss"),"stroke-width":1.2}));
+  }
+  curve(f,avc,0.6,10.3,C("--ink-faint"),1.8,"5 3");
+  curve(f,atc,1.6,10.3,C("--ink-soft"),2.2);
+  curve(f,mc,0.2,10.3,C("--brine"),2.2);
+  label(f,f.x(10.3),f.y(mc(10.3))-6,"MC",C("--brine"),12,"end");
+  label(f,f.x(10.3),f.y(atc(10.3))+14,"ATC",C("--ink-soft"),12,"end");
+  label(f,f.x(9.6),f.y(avc(9.6))+14,"AVC",C("--ink-faint"),12,"end");
+  hline(f,P,C("--crude"),2.2);
+  if(q>0)crosshair(f,q,P);
+  var pi=q>0?(P*q-tc(q)):-FC;
+  document.getElementById("r-q2").textContent=q>0?q.toFixed(2)+" bbl":"0 bbl";
+  document.getElementById("r-ac2").textContent=q>0?money(ac,2):"\u2014";
+  document.getElementById("r-ppu").textContent=q>0?((P-ac)<0?"\u2212"+money(ac-P,2):money(P-ac,2)):"\u2014";
+  document.getElementById("r-tp").textContent=(pi<0?"\u2212"+money(-pi,2):money(pi,2));
+  var v=document.getElementById("v-rect");
+  if(q>0 && Math.abs(P-MIN_ATC)<0.3){v.dataset.tone="flat";v.innerHTML="<strong>Break even.</strong> Price sits at minimum AC ($20.41), the rectangle collapses to a line, and economic profit is zero &mdash; a <em>normal</em> profit.";}
+  else if(P>MIN_ATC){v.dataset.tone="gain";v.innerHTML="<strong>Profit.</strong> Height is profit per barrel (P &minus; AC), width is the "+q.toFixed(2)+" barrels sold.";}
+  else if(P>MIN_AVC){v.dataset.tone="loss";v.innerHTML="<strong>Loss, but keep producing.</strong> The rectangle is a loss, yet it is smaller than the $50 of fixed cost the firm would owe if it shut down.";}
+  else{v.dataset.tone="loss";v.innerHTML="<strong>Shut down.</strong> Below $13 the price doesn&rsquo;t even cover average variable cost &mdash; producing makes the loss worse than the fixed cost alone.";}
+}
+
+/* =========================================================================
+   SLIDE 19 - the three decision zones
+   ========================================================================= */
+function drawZones(P){
+  var svg=document.getElementById("fig-zones"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,x1:10.5,y1:46,xlabel:"Quantity (barrels)",ylabel:"Dollars per barrel"});
+  var bands=[[f.y0,MIN_AVC,"--loss-fill","Shut down now"],[MIN_AVC,MIN_ATC,"--crude-soft","Produce, but exit"],[MIN_ATC,f.y1,"--gain-fill","Stay \u2014 or enter"]];
+  bands.forEach(function(b){
+    f.add(E("rect",{x:f.left,y:f.y(b[1]),width:f.right-f.left,height:f.y(b[0])-f.y(b[1]),fill:C(b[2]),opacity:.55}));
+    f.add(E("text",{x:f.right-6,y:f.y(b[1])-6,fill:C("--ink-soft"),"font-size":11,"text-anchor":"end","font-weight":700,"font-family":"'Source Sans 3',sans-serif"},b[3]));
+  });
+  yticks(f,[MIN_AVC,MIN_ATC,40],function(v){return "$"+v.toFixed(v===40?0:2);});
+  xticks(f,[2,4,6,8,10]);
+  curve(f,avc,0.6,10.3,C("--ink-faint"),1.8,"5 3");
+  curve(f,atc,1.6,10.3,C("--ink-soft"),2.2);
+  curve(f,mc,0.2,10.3,C("--brine"),2.2);
+  label(f,f.x(10.3),f.y(mc(10.3))-6,"MC",C("--brine"),12,"end");
+  label(f,f.x(10.3),f.y(atc(10.3))+14,"ATC",C("--ink-soft"),12,"end");
+  label(f,f.x(9.6),f.y(avc(9.6))+14,"AVC",C("--ink-faint"),12,"end");
+  hline(f,P,C("--crude"),2.4);
+  var q=(P>MIN_AVC)?qStar(P):0;
+  if(q>0)crosshair(f,q,P);
+  label(f,f.left+6,f.y(P)-7,"P = "+money(P,2),C("--crude"),11,"start");
+  var pi=q>0?(P*q-tc(q)):-FC;
+  document.getElementById("r-q3").textContent=q>0?q.toFixed(2)+" bbl":"0 bbl";
+  document.getElementById("r-pi3").textContent=(pi<0?"\u2212"+money(-pi,2):money(pi,2));
+  var v=document.getElementById("v-zones");
+  if(P<MIN_AVC){v.dataset.tone="loss";v.innerHTML="<strong>Shut down immediately.</strong> TR &lt; VC. Operating loses more than the $50 fixed cost the firm owes anyway.";}
+  else if(P<MIN_ATC){v.dataset.tone="loss";v.innerHTML="<strong>Keep producing &mdash; and plan to leave.</strong> Price beats AVC, so each barrel helps pay down fixed cost; but it is under AC, so exit as soon as the fixed commitment ends.";}
+  else{v.dataset.tone="gain";v.innerHTML="<strong>Produce where P = MC.</strong> Price is at or above AC, so this is a going concern &mdash; and an outsider would want to enter.";}
+}
+
+/* =========================================================================
+   SLIDE 20 - entry and exit drive price to minimum AC
+   ========================================================================= */
+function mktQd(P){return 400-8*P;}
+function solveP(N){
+  var lo=9.01,hi=60,m;
+  for(var i=0;i<70;i++){m=(lo+hi)/2; if(N*qStar(m)>mktQd(m))hi=m;else lo=m;}
+  return m;
+}
+function drawEntry(N){
+  var a=document.getElementById("fig-mkt2"); if(!a)return;
+  var P=solveP(N), q=qStar(P), Qm=N*q, pi=P*q-tc(q);
+  var f=Frame(a,{W:360,H:320,x1:420,y1:46,xlabel:"Industry quantity (barrels)",ylabel:"Price per barrel"});
+  yticks(f,[10,20,30,40],function(v){return "$"+v;});
+  curve(f,function(Q){return (400-Q)/8;},0,400,C("--ink-soft"),2);
+  (function(){
+    var d="",i,pp;
+    for(i=0;i<=80;i++){pp=9+ (45-9)*i/80; d+=(d===""?"M":"L")+f.x(Math.min(N*qStar(pp),415)).toFixed(2)+" "+f.y(pp).toFixed(2);}
+    f.add(E("path",{d:d,fill:"none",stroke:C("--brine"),"stroke-width":2.2}));
+  })();
+  f.add(E("line",{x1:f.left,x2:f.right,y1:f.y(MIN_ATC),y2:f.y(MIN_ATC),stroke:C("--gain"),"stroke-width":1.4,"stroke-dasharray":"4 3"}));
+  label(f,f.right-4,f.y(MIN_ATC)-6,"min AC $20.41",C("--gain"),10,"end");
+  crosshair(f,Math.min(Qm,415),P);
+  label(f,f.left+6,f.top+12,"Market",C("--ink-faint"),11,"start");
+  label(f,f.x(370),f.y((400-370)/8)-7,"D",C("--ink-soft"),12,"middle");
+  label(f,f.x(Math.min(N*qStar(40),410)),f.y(40)-7,"S of "+N+" firms",C("--brine"),10,"end");
+
+  var b=document.getElementById("fig-firm2");
+  var g=Frame(b,{W:360,H:320,x1:10.5,y1:46,xlabel:"Firm quantity (barrels)",ylabel:"Dollars per barrel"});
+  yticks(g,[10,20,30,40],function(v){return "$"+v;});
+  if(q>0){
+    var top=Math.max(P,atc(q)),bot=Math.min(P,atc(q));
+    g.add(E("rect",{x:g.left,y:g.y(top),width:g.x(q)-g.left,height:g.y(bot)-g.y(top),fill:pi>=0?C("--gain-fill"):C("--loss-fill"),stroke:pi>=0?C("--gain"):C("--loss"),"stroke-width":1.2}));
+  }
+  curve(g,atc,1.6,10.3,C("--ink-soft"),2.2);
+  curve(g,mc,0.2,10.3,C("--brine"),2.2);
+  label(g,g.x(10.3),g.y(mc(10.3))-6,"MC",C("--brine"),12,"end");
+  label(g,g.x(10.3),g.y(atc(10.3))+14,"ATC",C("--ink-soft"),12,"end");
+  hline(g,P,C("--crude"),2.2);
+  if(q>0)crosshair(g,q,P);
+  label(g,g.left+6,g.top+12,"One firm",C("--ink-faint"),11,"start");
+
+  document.getElementById("r-pm").textContent=money(P,2);
+  document.getElementById("r-qm").textContent=Qm.toFixed(0)+" bbl";
+  document.getElementById("r-qf").textContent=q.toFixed(2)+" bbl";
+  document.getElementById("r-pf").textContent=(pi<0?"\u2212"+money(-pi,2):money(pi,2));
+  var v=document.getElementById("v-entry");
+  if(pi>0.5){v.dataset.tone="gain";v.innerHTML="<strong>Profits attract entry.</strong> Outsiders see "+money(pi,2)+" per firm, so firms enter, industry supply shifts right, and price falls.";}
+  else if(pi<-0.5){v.dataset.tone="loss";v.innerHTML="<strong>Losses force exit.</strong> Each firm loses "+money(-pi,2)+". Firms leave, supply shifts left, and price rises.";}
+  else{v.dataset.tone="flat";v.innerHTML="<strong>Long-run equilibrium.</strong> Price has landed on minimum AC ($20.41). Profits are normal and nobody has a reason to enter or leave.";}
+}
+
+/* =========================================================================
+   SLIDE 21 - increasing cost: shallow firm vs deep firm
+   ========================================================================= */
+function drawTwoFirms(){
+  var specs=[["fig-cheap","Firm 1 \u2014 oil near the surface",0,"$20.41"],["fig-deep","Firm 2 \u2014 oil located deeper",12,"$32.41"]];
+  specs.forEach(function(s){
+    var svg=document.getElementById(s[0]); if(!svg)return;
+    var k=s[2];
+    var f=Frame(svg,{W:360,H:320,x1:10.5,y1:52,xlabel:"Quantity (barrels)",ylabel:"Dollars per barrel"});
+    yticks(f,[20,40],function(v){return "$"+v;});
+    curve(f,function(q){return atc(q)+k;},1.6,10.3,C("--ink-soft"),2.1);
+    curve(f,function(q){return mc(q)+k;},0.2,10.3,C("--brine"),2.1);
+    hline(f,MIN_ATC+k,C("--crude"),1.8,"4 3");
+    label(f,f.left+6,f.y(MIN_ATC+k)-6,"min AC "+s[3],C("--crude"),10,"start");
+    label(f,f.x(10.3),f.y(mc(10.3)+k)-6,"MC",C("--brine"),11,"end");
+    label(f,f.x(10.3),f.y(atc(10.3)+k)+13,"ATC",C("--ink-soft"),11,"end");
+    f.add(E("text",{x:f.left+6,y:f.top+12,fill:C("--ink-faint"),"font-size":11,"font-weight":700,"font-family":"'Source Sans 3',sans-serif"},s[1]));
+  });
+}
+
+/* =========================================================================
+   SLIDE 23 - three industry supply curves
+   ========================================================================= */
+var indKind="inc";
+var IND={
+  inc:{s:function(Q){return 10+0.15*Q;},name:"Increasing cost",color:"--brine"},
+  con:{s:function(){return 20;},name:"Constant cost",color:"--brine"},
+  dec:{s:function(Q){return 30-0.1*Q;},name:"Decreasing cost",color:"--brine"}
+};
+function indSolve(a){
+  if(indKind==="inc"){var Q=(a-20)/1.3;return [Q,10+0.15*Q];}
+  if(indKind==="con"){return [a-40,20];}
+  var Q2=(a-60)/0.8; return [Q2,30-0.1*Q2];
+}
+function drawInd(sl){
+  var svg=document.getElementById("fig-ind"); if(!svg)return;
+  var a=40+sl*1.6;
+  var f=Frame(svg,{W:520,H:300,x1:190,y1:40,xlabel:"Industry quantity",ylabel:"Price"});
+  yticks(f,[10,20,30],function(v){return "$"+v;});
+  var base=40+30*1.6;
+  f.add(E("path",{d:"M"+f.x(Math.max(0,base-80))+" "+f.y(40)+" L"+f.x(base)+" "+f.y(0)+"",fill:"none",stroke:C("--rule"),"stroke-width":1.6,"stroke-dasharray":"4 3"}));
+  f.add(E("path",{d:"M"+f.x(Math.max(0,a-80))+" "+f.y(40)+" L"+f.x(a)+" "+f.y(0)+"",fill:"none",stroke:C("--ink-soft"),"stroke-width":2}));
+  curve(f,IND[indKind].s,0,188,C(IND[indKind].color),2.4);
+  var r=indSolve(a);
+  crosshair(f,Math.max(0,Math.min(r[0],188)),r[1]);
+  label(f,f.x(185),f.y(IND[indKind].s(185))-7,"Long-run S",C("--brine"),11,"end");
+  label(f,f.x(Math.min(a,186)),f.y(1)-6,"D",C("--ink-soft"),12,"end");
+  document.getElementById("r-plr").textContent=money(r[1],2);
+  document.getElementById("r-qlr").textContent=Math.max(0,r[0]).toFixed(0);
+  document.getElementById("s-d-val").textContent=sl<30?"Contracted":(sl===30?"Baseline":"Expanded");
+  var v=document.getElementById("v-ind");
+  if(indKind==="inc"){v.dataset.tone="loss";v.innerHTML="<strong>Costs rise with output.</strong> Meeting extra demand means tapping higher-cost wells, so a bigger industry needs a higher price.";}
+  else if(indKind==="con"){v.dataset.tone="flat";v.innerHTML="<strong>Costs don&rsquo;t move.</strong> The industry buys only a small share of its inputs, so it can double in size at the same minimum AC. Price barely budges.";}
+  else{v.dataset.tone="gain";v.innerHTML="<strong>Costs fall with output.</strong> Growth pulls input suppliers into the cluster. Rare &mdash; and temporary: once the cluster matures, costs go constant or increasing.";}
+}
+
+/* =========================================================================
+   SLIDE 16 - practice table
+   ========================================================================= */
+var PR=[
+  {Q:1,FC:50,VC:30,TC:80,MC:30,AFC:50.00,AVC:30.00,ATC:80.00,given:["FC","VC","MC","ATC"]},
+  {Q:2,FC:50,VC:50,TC:100,MC:20,AFC:25.00,AVC:25.00,ATC:50.00,given:["VC","TC","AFC"]},
+  {Q:3,FC:50,VC:80,TC:130,MC:30,AFC:16.67,AVC:26.67,ATC:43.33,given:["FC","MC","AVC"]},
+  {Q:4,FC:50,VC:120,TC:170,MC:40,AFC:12.50,AVC:30.00,ATC:42.50,given:["VC","AFC","ATC"]}
+];
+var PRCOLS=["FC","VC","TC","MC","AFC","AVC","ATC"];
+function buildPractice(){
+  var host=document.getElementById("tbl-practice"); if(!host)return;
+  var h='<table class="tbl"><thead><tr><th>Q</th>';
+  PRCOLS.forEach(function(c){h+="<th>"+c+" ($)</th>";});
+  h+='</tr></thead><tbody>';
+  PR.forEach(function(r,ri){
+    h+='<tr><td>'+r.Q+'</td>';
+    PRCOLS.forEach(function(c){
+      var dec=(c.length===3&&c[0]==="A")?2:0;
+      if(r.given.indexOf(c)>=0){h+='<td class="given">'+r[c].toFixed(dec)+'</td>';}
+      else{h+='<td><input type="text" inputmode="decimal" data-r="'+ri+'" data-c="'+c+'" aria-label="'+c+' at quantity '+r.Q+'"></td>';}
+    });
+    h+='</tr>';
+  });
+  host.innerHTML=h+'</tbody></table>';
+}
+function practiceInputs(){return document.querySelectorAll('#tbl-practice input');}
+function checkPractice(){
+  var ins=practiceInputs(),right=0,total=0,blank=0;
+  for(var i=0;i<ins.length;i++){
+    var el2=ins[i],r=PR[Number(el2.dataset.r)],c=el2.dataset.c,want=r[c];
+    total++;
+    var raw=el2.value.replace(/[$,\s]/g,"");
+    if(raw===""){blank++;delete el2.dataset.state;continue;}
+    var got=parseFloat(raw);
+    if(isFinite(got)&&Math.abs(got-want)<=0.02){el2.dataset.state="ok";right++;}
+    else el2.dataset.state="no";
+  }
+  var v=document.getElementById("v-practice");
+  if(blank===total){v.dataset.tone="flat";v.innerHTML="Nothing entered yet. Start with the <span class='mono'>FC</span> column &mdash; fixed cost never changes.";}
+  else if(right===total){v.dataset.tone="gain";v.innerHTML="<strong>All "+total+" correct.</strong> Notice MC bottoms out and then rises, which is what drags ATC down and then back up.";}
+  else{v.dataset.tone="loss";v.innerHTML="<strong>"+right+" of "+total+" correct.</strong> Red cells are off. Remember <span class='mono'>TC = FC + VC</span> and <span class='mono'>AFC + AVC = ATC</span>.";}
+}
+function revealPractice(){
+  var ins=practiceInputs();
+  for(var i=0;i<ins.length;i++){
+    var el2=ins[i],r=PR[Number(el2.dataset.r)],c=el2.dataset.c;
+    el2.value=r[c].toFixed((c.length===3&&c[0]==="A")?2:0);
+    el2.dataset.state="ok";
+  }
+  var v=document.getElementById("v-practice");
+  v.dataset.tone="flat";
+  v.innerHTML="<strong>Answer key.</strong> MC falls to $20 at Q = 2 and then rises; ATC keeps falling to $42.50 because AFC is still dropping fast.";
+}
+function clearPractice(){
+  var ins=practiceInputs();
+  for(var i=0;i<ins.length;i++){ins[i].value="";delete ins[i].dataset.state;}
+  var v=document.getElementById("v-practice");
+  v.dataset.tone="flat"; v.innerHTML="Type a value in any blank cell, then check.";
+}
+
+/* =========================================================================
+   wiring
+   ========================================================================= */
+function on(id,fn){var e=document.getElementById(id); if(e)e.addEventListener("input",fn);}
+
+buildOilTable(); buildPractice();
+drawPriceTaker(); drawTwoFirms(); drawSpectrum();
+
+on("s-q",function(e){var q=+e.target.value;document.getElementById("s-q-val").textContent=q;syncOilTable(q);});
+syncOilTable(0);
+
+on("s-q2",function(e){var q=+e.target.value;document.getElementById("s-q2-val").textContent=q;drawMRMC(q);});
+drawMRMC(0);
+
+on("s-p1",function(e){var P=+e.target.value;document.getElementById("s-p1-val").textContent=money(P,2);trail.push([qStar(P),P]);if(trail.length>240)trail.shift();drawSupply(P);});
+drawSupply(9);
+(function(){var b=document.getElementById("b-trail");if(b)b.addEventListener("click",function(){trail=[];drawSupply(+document.getElementById("s-p1").value);});})();
+
+on("s-p2",function(e){var P=+e.target.value;document.getElementById("s-p2-val").textContent=money(P,2);drawRect(P);});
+drawRect(9);
+Array.prototype.forEach.call(document.querySelectorAll("[data-setp]"),function(b){
+  b.addEventListener("click",function(){
+    var P=+b.dataset.setp, s=document.getElementById("s-p2");
+    s.value=P; document.getElementById("s-p2-val").textContent=money(P,2); drawRect(P);
+  });
+});
+
+on("s-p3",function(e){var P=+e.target.value;document.getElementById("s-p3-val").textContent=money(P,2);drawZones(P);});
+drawZones(6);
+
+on("s-n",function(e){var N=+e.target.value;document.getElementById("s-n-val").textContent=N;drawEntry(N);});
+drawEntry(18);
+(function(){
+  var b=document.getElementById("b-run"); if(!b)return;
+  var timer=null;
+  b.addEventListener("click",function(){
+    if(timer){clearInterval(timer);timer=null;b.textContent="Run to the long run";return;}
+    b.textContent="Stop";
+    timer=setInterval(function(){
+      var s=document.getElementById("s-n"), N=+s.value;
+      var P=solveP(N), q=qStar(P), pi=P*q-tc(q);
+      if(Math.abs(pi)<0.5 || N<=8 || N>=64){clearInterval(timer);timer=null;b.textContent="Run to the long run";return;}
+      s.value=N+(pi>0?1:-1);
+      document.getElementById("s-n-val").textContent=s.value;
+      drawEntry(+s.value);
+    },110);
+  });
+})();
+
+Array.prototype.forEach.call(document.querySelectorAll("#ind-pick button"),function(b){
+  b.addEventListener("click",function(){
+    Array.prototype.forEach.call(document.querySelectorAll("#ind-pick button"),function(o){o.setAttribute("aria-pressed","false");});
+    b.setAttribute("aria-pressed","true");
+    indKind=b.dataset.ind;
+    drawInd(+document.getElementById("s-d").value);
+  });
+});
+on("s-d",function(e){drawInd(+e.target.value);});
+drawInd(30);
+
+(function(){
+  var c=document.getElementById("b-check"),r=document.getElementById("b-reveal"),x=document.getElementById("b-clear");
+  if(c)c.addEventListener("click",checkPractice);
+  if(r)r.addEventListener("click",revealPractice);
+  if(x)x.addEventListener("click",clearPractice);
+})();
+
+/* ---------------- navigation ---------------- */
+var slides=Array.prototype.slice.call(document.querySelectorAll(".slide"));
+var rail=document.getElementById("rail"), counter=document.getElementById("counter");
+var cur=0;
+slides.forEach(function(s,i){
+  var b=document.createElement("button");
+  b.type="button"; b.setAttribute("role","tab");
+  b.setAttribute("aria-label","Slide "+(i+1)+": "+(s.dataset.label||""));
+  b.title=(i+1)+". "+(s.dataset.label||"");
+  b.addEventListener("click",function(){go(i);});
+  rail.appendChild(b);
+});
+function go(i){
+  cur=Math.max(0,Math.min(slides.length-1,i));
+  slides.forEach(function(s,j){s.classList.toggle("on",j===cur);});
+  Array.prototype.forEach.call(rail.children,function(b,j){b.setAttribute("aria-current",j===cur?"true":"false");});
+  counter.textContent=(cur+1)+" / "+slides.length;
+}
+document.getElementById("prev").addEventListener("click",function(){go(cur-1);});
+document.getElementById("next").addEventListener("click",function(){go(cur+1);});
+document.addEventListener("keydown",function(e){
+  var t=e.target.tagName;
+  if(t==="INPUT"&&e.target.type==="text")return;
+  if(t==="INPUT"&&e.target.type==="range"&&(e.key==="ArrowLeft"||e.key==="ArrowRight"))return;
+  if(e.key==="ArrowRight"||e.key==="PageDown"||e.key===" "){go(cur+1);e.preventDefault();}
+  else if(e.key==="ArrowLeft"||e.key==="PageUp"){go(cur-1);e.preventDefault();}
+  else if(e.key==="Home"){go(0);}
+  else if(e.key==="End"){go(slides.length-1);}
+});
+go(0);
+})();
+</script>
