@@ -1,0 +1,1085 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Elasticity and Its Applications</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ink:#16211E; --ink-soft:#44544F; --ink-faint:#7C8C87;
+  --paper:#F2F4F3; --surface:#FFFFFF; --surface-2:#E7EBE9;
+  --rule:#CBD4D1; --rule-soft:#DFE5E3;
+  --crude:#C47418; --crude-soft:#F0DCBE;
+  --brine:#3F7A72; --brine-soft:#D7E6E3;
+  --gain:#2E7D52; --gain-fill:rgba(46,125,82,.16);
+  --loss:#B5432F; --loss-fill:rgba(181,67,47,.16);
+  --stage:#FFFFFF; --shadow:0 1px 2px rgba(22,33,30,.06),0 10px 34px rgba(22,33,30,.10);
+}
+:root:not([data-theme="light"]) { color-scheme: light dark; }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#E7EDEA; --ink-soft:#A6B5B0; --ink-faint:#74857F;
+    --paper:#0E1A17; --surface:#16241F; --surface-2:#1E302A;
+    --rule:#2E443D; --rule-soft:#243730;
+    --crude:#E0A050; --crude-soft:#3B2E18;
+    --brine:#7FB8AF; --brine-soft:#1B312D;
+    --gain:#5FBE8A; --gain-fill:rgba(95,190,138,.18);
+    --loss:#E2836C; --loss-fill:rgba(226,131,108,.18);
+    --stage:#13201C; --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 40px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#E7EDEA; --ink-soft:#A6B5B0; --ink-faint:#74857F;
+  --paper:#0E1A17; --surface:#16241F; --surface-2:#1E302A;
+  --rule:#2E443D; --rule-soft:#243730;
+  --crude:#E0A050; --crude-soft:#3B2E18;
+  --brine:#7FB8AF; --brine-soft:#1B312D;
+  --gain:#5FBE8A; --gain-fill:rgba(95,190,138,.18);
+  --loss:#E2836C; --loss-fill:rgba(226,131,108,.18);
+  --stage:#13201C; --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 40px rgba(0,0,0,.45);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Sans 3",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  margin:0; min-height:100vh; display:flex; flex-direction:column;
+}
+h1,h2,h3{font-family:Spectral,Georgia,"Times New Roman",serif; font-weight:600; text-wrap:balance; margin:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+/* ---------- shell ---------- */
+.shell{flex:1; display:flex; flex-direction:column; min-height:0; padding:14px 16px 0}
+.stagewrap{flex:1; display:flex; align-items:center; justify-content:center; min-height:0}
+.stage{
+  container-type:inline-size;
+  width:100%; max-width:min(1420px, calc((100vh - 118px) * 16 / 9)); aspect-ratio:16/9;
+  background:var(--stage); border:1px solid var(--rule-soft); border-radius:3px;
+  box-shadow:var(--shadow); position:relative; overflow:hidden;
+}
+.slide{position:absolute; inset:0; padding:4.2cqi 5cqi 4.4cqi; display:none; flex-direction:column; gap:2.2cqi}
+.slide.on{display:flex}
+.slide[data-pad="tight"]{padding:3.2cqi 4cqi 3.4cqi; gap:1.6cqi}
+
+/* ---------- slide furniture ---------- */
+.eyebrow{
+  font-size:1.18cqi; letter-spacing:.17em; text-transform:uppercase; font-weight:700;
+  color:var(--crude); display:flex; gap:.9em; align-items:baseline;
+}
+.eyebrow .q{color:var(--ink-faint); letter-spacing:.17em}
+.stitle{font-size:4.1cqi; line-height:1.08; letter-spacing:-.01em}
+.slide[data-pad="tight"] .stitle{font-size:3.3cqi}
+.lede{font-size:2.05cqi; line-height:1.45; color:var(--ink-soft); max-width:46ch}
+.body{display:flex; flex-direction:column; gap:1.1cqi; font-size:1.95cqi; line-height:1.42}
+.body li{margin:0}
+ul.body{list-style:none; padding:0}
+ul.body li{position:relative; padding-left:1.5em}
+ul.body li::before{content:""; position:absolute; left:.2em; top:.62em; width:.5em; height:.5em; background:var(--crude); border-radius:50%}
+ul.body li ul{list-style:none; padding:.5em 0 0 0; display:flex; flex-direction:column; gap:.45em; font-size:.88em; color:var(--ink-soft)}
+ul.body li ul li::before{width:.42em; height:.42em; background:none; border:1px solid var(--brine); top:.55em}
+.content{flex:1; display:flex; gap:3cqi; min-height:0}
+.col{flex:1; display:flex; flex-direction:column; gap:1.6cqi; min-width:0}
+.col.narrow{flex:0 0 32cqi}
+.col.wide{flex:1.5}
+
+/* ---------- definition cards ---------- */
+.defs{display:flex; flex-direction:column; gap:1.3cqi}
+.defgrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.3cqi}
+.def{background:var(--surface-2); border-radius:2px; padding:1.5cqi 1.8cqi; display:flex; flex-direction:column; gap:.5cqi}
+.def dt{font-family:Spectral,Georgia,serif; font-weight:700; font-size:2cqi; color:var(--ink)}
+.def dd{margin:0; font-size:1.72cqi; line-height:1.38; color:var(--ink-soft)}
+.def .eq{font-family:"IBM Plex Mono",monospace; font-size:1.6cqi; color:var(--crude); font-weight:500; letter-spacing:.02em}
+
+.formula{margin:0; font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:2.9cqi; font-weight:500;
+  color:var(--ink); display:flex; align-items:baseline; gap:.75em; flex-wrap:wrap; font-variant-numeric:tabular-nums}
+.formula b{color:var(--crude); font-weight:600; font-size:1.18em; line-height:1}
+.formula small{font-family:"Source Sans 3",sans-serif; font-size:1.3cqi; letter-spacing:.14em;
+  text-transform:uppercase; font-weight:700; color:var(--ink-faint)}
+
+/* ---------- numbered question cards ---------- */
+.qcards{display:grid; grid-template-columns:repeat(3,1fr); gap:2cqi; flex:1; align-content:center}
+.qcard{display:flex; flex-direction:column; gap:1cqi; padding-top:1.4cqi; border-top:2px solid var(--crude)}
+.qcard .n{font-family:"IBM Plex Mono",monospace; font-size:1.3cqi; color:var(--crude); font-weight:600; letter-spacing:.14em}
+.qcard h3{font-size:2.5cqi; line-height:1.15}
+.qcard p{margin:0; font-size:1.72cqi; line-height:1.4; color:var(--ink-soft)}
+
+/* ---------- controls ---------- */
+.panel{background:var(--surface-2); border-radius:2px; padding:1.6cqi 1.8cqi; display:flex; flex-direction:column; gap:1.2cqi}
+.ctrl{display:flex; flex-direction:column; gap:.55cqi}
+.ctrl label{font-size:1.2cqi; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--ink-faint)}
+.ctrl .val{font-family:"IBM Plex Mono",monospace; font-size:2.6cqi; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums}
+input[type=range]{
+  -webkit-appearance:none; appearance:none; width:100%; height:1.5cqi; background:transparent; cursor:pointer; margin:0;
+}
+input[type=range]::-webkit-slider-runnable-track{height:.45cqi; background:var(--rule); border-radius:1px}
+input[type=range]::-moz-range-track{height:.45cqi; background:var(--rule); border-radius:1px}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:1.9cqi; height:1.9cqi; border-radius:50%; background:var(--crude);
+  border:.35cqi solid var(--stage); box-shadow:0 0 0 1px var(--crude); margin-top:-.75cqi;
+}
+input[type=range]::-moz-range-thumb{
+  width:1.9cqi; height:1.9cqi; border-radius:50%; background:var(--crude); border:.35cqi solid var(--stage); box-shadow:0 0 0 1px var(--crude);
+}
+input[type=range]:focus-visible{outline:2px solid var(--brine); outline-offset:4px}
+.readout{display:grid; grid-template-columns:auto 1fr; gap:.45cqi 1.2cqi; font-size:1.75cqi; align-items:baseline}
+.readout dt{color:var(--ink-faint); font-size:1.5cqi; letter-spacing:.06em}
+.readout dd{margin:0; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-weight:500}
+.verdict{font-size:1.85cqi; line-height:1.36; padding:1.1cqi 1.3cqi; border-radius:2px; background:var(--surface); color:var(--ink)}
+.verdict strong{font-family:Spectral,Georgia,serif}
+.verdict[data-tone="gain"]{box-shadow:inset 0 0 0 1px var(--gain); color:var(--ink)}
+.verdict[data-tone="loss"]{box-shadow:inset 0 0 0 1px var(--loss)}
+.verdict[data-tone="flat"]{box-shadow:inset 0 0 0 1px var(--crude)}
+.btnrow{display:flex; gap:.8cqi; flex-wrap:wrap}
+button.b{
+  font-family:"Source Sans 3",sans-serif; font-size:1.45cqi; font-weight:600; letter-spacing:.02em;
+  padding:.7cqi 1.3cqi; border-radius:2px; border:1px solid var(--rule); background:var(--surface);
+  color:var(--ink); cursor:pointer;
+}
+button.b:hover{border-color:var(--crude); color:var(--crude)}
+button.b[aria-pressed="true"]{background:var(--crude); border-color:var(--crude); color:#fff}
+:root[data-theme="dark"] button.b[aria-pressed="true"], :root:not([data-theme="light"]) button.b[aria-pressed="true"]{color:#14221D}
+button.b:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+
+/* ---------- figure ---------- */
+.fig{flex:1; display:flex; flex-direction:column; gap:.7cqi; min-height:0}
+.fig svg{width:100%; height:100%; display:block; flex:1; min-height:0; overflow:visible}
+.figcap{font-size:1.35cqi; color:var(--ink-faint); line-height:1.35}
+.legend{display:flex; gap:1.6cqi; flex-wrap:wrap; font-size:1.4cqi; color:var(--ink-soft)}
+.legend span{display:flex; align-items:center; gap:.5em}
+.swatch{width:1.5em; height:.28em; border-radius:1px; display:inline-block}
+.swatch-hatch{height:.85em; border:1px solid var(--loss);
+  background:repeating-linear-gradient(45deg,var(--loss) 0 1px,transparent 1px 4px),var(--loss-fill)}
+.figpair{display:flex; gap:2cqi; flex:1; min-height:0}
+.figpair>svg{flex:1 1 0; width:auto; min-width:0}
+.col.narrow .panel{padding:1.3cqi 1.4cqi; gap:1cqi}
+.col.narrow .ctrl .val{font-size:2.3cqi}
+.col.narrow .readout{font-size:1.58cqi; gap:.32cqi 1cqi}
+.col.narrow .readout dt{font-size:1.32cqi}
+.col.narrow .verdict{font-size:1.6cqi; padding:.9cqi 1.1cqi; line-height:1.33}
+.slide[data-figs="pair"] .content{gap:2.2cqi}
+.slide[data-figs="pair"] .col.narrow{flex:0 0 25cqi}
+.slide[data-figs="pair"] .panel{padding:1.1cqi 1.2cqi; gap:.9cqi}
+.slide[data-figs="pair"] .ctrl .val{font-size:2.1cqi}
+.slide[data-figs="pair"] .ctrl label{font-size:1.05cqi}
+.slide[data-figs="pair"] .readout{font-size:1.5cqi; gap:.3cqi .8cqi}
+.slide[data-figs="pair"] .readout dt{font-size:1.28cqi}
+.slide[data-figs="pair"] .verdict{font-size:1.5cqi; padding:.85cqi 1cqi}
+.slide[data-figs="pair"] ul.body{font-size:1.62cqi; gap:.85cqi}
+.slide[data-figs="pair"] .def{padding:1.1cqi 1.2cqi}
+.slide[data-figs="pair"] .def dt{font-size:1.72cqi}
+.slide[data-figs="pair"] .def dd{font-size:1.46cqi}
+.slide[data-figs="pair"] button.b{font-size:1.25cqi; padding:.6cqi 1cqi}
+.slide[data-figs="pair"] .figcap{font-size:1.24cqi}
+
+/* ---------- data table ---------- */
+.tbl{width:100%; border-collapse:collapse; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:1.42cqi}
+.tbl th{
+  font-family:"Source Sans 3",sans-serif; font-size:1.18cqi; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-faint); font-weight:700; text-align:right; padding:.55cqi .6cqi; border-bottom:1px solid var(--rule);
+}
+.tbl th:first-child, .tbl td:first-child{text-align:left}
+.tbl td{padding:.5cqi .6cqi; border-bottom:1px solid var(--rule-soft); text-align:right; color:var(--ink-soft)}
+.tbl tr.hi td{background:var(--crude-soft); color:var(--ink); font-weight:600}
+.tbl tr.peak td:first-child::after{content:" \25C0"; color:var(--crude); font-size:.8em}
+.tbl input{
+  width:100%; font:inherit; text-align:right; background:var(--surface); color:var(--ink);
+  border:1px solid var(--rule); border-radius:2px; padding:.25cqi .4cqi;
+}
+.tbl input:focus-visible{outline:2px solid var(--brine); outline-offset:1px}
+.tbl input[data-state="ok"]{border-color:var(--gain); background:var(--gain-fill); color:var(--ink)}
+.tbl input[data-state="no"]{border-color:var(--loss); background:var(--loss-fill); color:var(--ink)}
+.given td{color:var(--ink)}
+
+/* ---------- market-structure spectrum ---------- */
+.spectrum{display:flex; flex-direction:column; gap:1cqi; flex:1; min-height:0}
+.spec-ends{display:flex; justify-content:space-between; font-size:1.12cqi; letter-spacing:.16em;
+  text-transform:uppercase; font-weight:700}
+.spec-ends .l{color:var(--brine)}
+.spec-ends .r{color:var(--loss)}
+.spec-axis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.6cqi;
+  position:relative; height:2.4cqi; align-items:center}
+.spec-axis::before{content:""; position:absolute; left:0; right:0; top:50%; height:.32cqi;
+  transform:translateY(-50%); border-radius:2px;
+  background:linear-gradient(90deg,var(--brine) 0%,var(--brine) 12%,var(--crude) 58%,var(--loss) 95%)}
+.spec-axis i{justify-self:center; position:relative; width:1.25cqi; height:1.25cqi; border-radius:50%;
+  background:var(--stage); border:.32cqi solid var(--ink-faint)}
+.spec-axis i[data-on]{border-color:var(--crude); box-shadow:0 0 0 .4cqi var(--crude-soft)}
+.spec-cols{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.6cqi; flex:1; min-height:0}
+.spec{display:flex; flex-direction:column; gap:.75cqi; min-width:0}
+.spec h3{font-size:1.95cqi; line-height:1.12; min-height:4.4cqi}
+.spec[data-here] h3{color:var(--crude)}
+.spec .tag{font-family:"IBM Plex Mono",monospace; font-size:1.05cqi; letter-spacing:.12em;
+  font-weight:600; color:var(--crude)}
+.spec svg{width:100%; height:8.6cqi; display:block}
+.spec dl{display:grid; grid-template-columns:auto 1fr; gap:.3cqi .8cqi; margin:0; font-size:1.4cqi; align-items:baseline}
+.spec dt{color:var(--ink-faint); font-size:1.18cqi; letter-spacing:.07em; text-transform:uppercase; font-weight:700}
+.spec dd{margin:0; color:var(--ink-soft); line-height:1.3}
+.spec[data-here] dd{color:var(--ink)}
+
+/* ---------- source table ---------- */
+.srctbl{width:100%; border-collapse:collapse; font-size:1.62cqi}
+.srctbl th{font-size:1.15cqi; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint);
+  font-weight:700; text-align:left; padding:.6cqi .8cqi; border-bottom:1px solid var(--rule)}
+.srctbl td{padding:.62cqi .8cqi; border-bottom:1px solid var(--rule-soft); vertical-align:baseline}
+.srctbl td:first-child{font-weight:600; color:var(--ink); white-space:nowrap}
+.srctbl td:last-child{color:var(--ink-soft)}
+.srctbl tr:last-child td{border-bottom:none}
+
+/* ---------- key-term list ---------- */
+.terms{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.9cqi 2.4cqi; flex:1; align-content:start}
+.term{display:flex; flex-direction:column; gap:.2cqi; padding-bottom:.8cqi; border-bottom:1px solid var(--rule-soft)}
+.term b{font-family:Spectral,Georgia,serif; font-size:1.72cqi; color:var(--ink)}
+.term span{font-size:1.48cqi; line-height:1.34; color:var(--ink-soft)}
+
+/* ---------- big stat ---------- */
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:2.4cqi}
+.stat{display:flex; flex-direction:column; gap:.3cqi}
+.stat b{font-family:"IBM Plex Mono",monospace; font-size:4.6cqi; font-weight:600; color:var(--crude); line-height:1}
+.stat span{font-size:1.52cqi; line-height:1.34; color:var(--ink-soft)}
+
+/* ---------- takeaways ---------- */
+.takes{display:flex; flex-direction:column; gap:1.5cqi; flex:1; justify-content:center}
+.take{display:grid; grid-template-columns:14cqi 1fr; gap:2cqi; align-items:baseline; padding-bottom:1.5cqi; border-bottom:1px solid var(--rule-soft)}
+.take:last-child{border-bottom:none; padding-bottom:0}
+.take h3{font-size:2.1cqi; color:var(--crude); line-height:1.15}
+.take p{margin:0; font-size:1.9cqi; line-height:1.42; color:var(--ink-soft)}
+.take p em{color:var(--ink); font-style:normal; font-weight:600}
+
+/* ---------- title slide ---------- */
+.titleslide{justify-content:center; gap:0}
+.titleslide .kicker{font-size:1.4cqi; letter-spacing:.24em; text-transform:uppercase; color:var(--ink-faint); font-weight:700}
+.titleslide h1{font-size:6.4cqi; line-height:1.03; letter-spacing:-.02em; margin:2.2cqi 0 1.6cqi; max-width:20ch}
+.titleslide .sub{font-size:2.1cqi; color:var(--ink-soft); max-width:52ch; line-height:1.45}
+.titleslide .meta{margin-top:3.4cqi; font-size:1.45cqi; color:var(--ink-faint); display:flex; gap:1.2em; flex-wrap:wrap}
+.titleslide .meta b{color:var(--crude); font-weight:600}
+.derrick{position:absolute; right:4cqi; bottom:0; width:34cqi; height:76cqi; opacity:.9; pointer-events:none}
+
+/* ---------- section divider ---------- */
+.divider{justify-content:center; background:var(--ink); color:var(--paper)}
+.divider .num{font-family:"IBM Plex Mono",monospace; font-size:1.4cqi; letter-spacing:.2em; color:var(--crude); font-weight:600}
+.divider h2{font-size:5.2cqi; line-height:1.06; margin:1.6cqi 0 1.4cqi; max-width:22ch; color:var(--paper)}
+.divider p{margin:0; font-size:2cqi; line-height:1.45; color:#A6B5B0; max-width:48ch}
+
+/* ---------- nav ---------- */
+.nav{
+  display:flex; align-items:center; gap:14px; padding:10px 4px 12px; max-width:1420px;
+  margin:0 auto; width:100%; font-size:13px; color:var(--ink-faint);
+}
+.rail{flex:1; display:flex; gap:3px; align-items:stretch; height:16px}
+.rail button{
+  flex:1; border:none; padding:0; background:transparent; cursor:pointer; position:relative; min-width:0;
+}
+.rail button::after{content:""; position:absolute; left:0; right:0; top:7px; height:2px; background:var(--rule); transition:background .15s, height .15s, top .15s}
+.rail button[aria-current="true"]::after{background:var(--crude); height:4px; top:6px}
+.rail button:hover::after{background:var(--brine)}
+.rail button:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.counter{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; letter-spacing:.04em; white-space:nowrap}
+.navbtn{
+  border:1px solid var(--rule); background:var(--surface); color:var(--ink); border-radius:2px;
+  width:30px; height:30px; cursor:pointer; font-size:15px; line-height:1; display:grid; place-items:center;
+}
+.navbtn:hover{border-color:var(--crude); color:var(--crude)}
+.navbtn:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.hint{white-space:nowrap}
+@media (max-width:760px){ .hint{display:none} }
+
+@media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important} }
+
+@media print{
+  @page{size:13.333in 7.5in; margin:0}
+  *{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important}
+  body{background:#fff; display:block}
+  .nav{display:none}
+  .shell{padding:0; display:block}
+  .stagewrap{display:block}
+  .stage{width:100%; max-width:none; max-height:none; height:auto; aspect-ratio:auto;
+    box-shadow:none; border:none; border-radius:0; overflow:visible; background:#fff}
+  .slide{display:flex !important; position:relative; inset:auto; width:100%; aspect-ratio:16/9;
+    overflow:hidden; background:var(--stage); break-after:page; page-break-after:always}
+  .slide:last-child{break-after:auto; page-break-after:auto}
+}
+</style>
+<style>
+.slide .tbl{font-size:1.6cqi}
+.slide .tbl th{font-size:1.2cqi}
+.slide .tbl td{padding:.7cqi .7cqi}
+.def .eq{display:block; margin-top:.4cqi}
+.titleslide .derrick{width:22cqi; height:50cqi; right:5cqi; bottom:6cqi; opacity:.85}
+.titleslide .sub{max-width:40ch}
+.qcards.qgrid4{grid-template-columns:repeat(2,1fr); gap:2.2cqi 3cqi}
+.qgrid4 .qcard h3{font-size:2.1cqi}
+.qcards.qgrid6{grid-template-columns:repeat(3,1fr); gap:2cqi 2.4cqi; align-content:start}
+.qgrid6 .qcard{gap:.7cqi; padding-top:1cqi}
+.qgrid6 .qcard h3{font-size:1.75cqi}
+.qgrid6 .qcard p{font-size:1.5cqi}
+select.sel{font-family:"Source Sans 3",sans-serif; font-size:1.5cqi; padding:.6cqi .8cqi; border:1px solid var(--rule);
+  border-radius:2px; background:var(--surface); color:var(--ink); width:100%}
+select.sel:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.col.narrow .readout dd{white-space:nowrap}
+.slide .tbl.words{font-family:"Source Sans 3",sans-serif; font-size:1.55cqi}
+.tbl.words th,.tbl.words td{text-align:left}
+.formula span sub{font-size:.62em}
+button.b.reveal{align-self:flex-start; margin-top:.4cqi}
+.qcard p.ans{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="stagewrap">
+    <div class="stage" id="stage">
+
+<section class="slide titleslide on" data-label="Title">
+  <span class="kicker">Principles of Microeconomics &#183; Chapter 5</span>
+  <h1>Elasticity and Its Applications</h1>
+  <p class="sub">How much quantity responds to a change in price, how that affects revenue, and what it explains about farming, gun buybacks and housing.</p>
+  <div class="meta"><span><b>Examples:</b> farms vs. computer chips, gun buybacks, housing</span><span><b>Drag</b> the sliders on the live diagrams</span></div>
+  <svg class="derrick" viewBox="0 0 160 360" aria-hidden="true">
+    <path d="M20 340 L20 110 M20 340 L150 340" fill="none" stroke="var(--rule)" stroke-width="1.8"/>
+    <path d="M55 130 L105 330" fill="none" stroke="var(--ink-soft)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M22 180 L148 280" fill="none" stroke="var(--brine)" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="85" cy="250" r="5" fill="var(--crude)"/>
+  </svg>
+</section>
+
+<section class="slide" data-label="Overview">
+  <div class="eyebrow"><span>Overview</span><span class="q">The big picture</span></div>
+  <h2 class="stitle">Which way, and how much</h2>
+  <p class="lede">Chapter 4&rsquo;s shifts tell you which way price and quantity move. Elasticity tells you how much.</p>
+  <div class="qcards">
+    <div class="qcard"><span class="n">PART 1</span><h3>Elasticity of demand</h3><p>The definition, its determinants, the midpoint formula, and the total-revenue rule.</p></div>
+    <div class="qcard"><span class="n">PART 2</span><h3>Elasticity of supply</h3><p>The definition, the midpoint formula again, and what makes supply more or less elastic.</p></div>
+    <div class="qcard"><span class="n">PART 3</span><h3>Applications</h3><p>Farming vs. computer chips, gun buybacks, housing markets, and quick price predictions.</p></div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part I">
+  <span class="num">PART ONE</span>
+  <h2>The elasticity of demand</h2>
+  <p>How responsive quantity demanded is to a change in price.</p>
+</section>
+
+<section class="slide" data-label="Definition">
+  <div class="eyebrow"><span>Elasticity of demand</span><span class="q">Definition</span></div>
+  <h2 class="stitle">Elasticity and slope are related, but they are different</h2>
+  <div class="content">
+    <div class="col">
+      <div class="defs">
+        <div class="def"><dt>Elasticity of demand (E<sub>d</sub>)</dt><dd>Measures how responsive quantity demanded is to a change in price. More responsive means more elastic.</dd></div>
+        <div class="def"><dt>Elasticity rule</dt><dd>Starting from the same price and quantity, a flatter demand (or supply) curve is more elastic than a steeper one.</dd></div>
+      </div>
+    </div>
+    <div class="col">
+      <ul class="body">
+        <li>Elasticity uses <strong>percentage</strong> changes, so it does not depend on the units you measure in.</li>
+        <li>Slope uses the raw change in price and quantity.</li>
+        <li>The same price increase barely moves Q on a steep curve and moves it a lot on a flat one.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-figs="pair" data-label="Live: insulin vs. lattes">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag the price</span></div>
+  <h2 class="stitle">The same price increase, two very different responses</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <div class="figpair">
+          <svg id="fig-ins" role="img" aria-label="Insulin: a steep demand curve; a price increase barely reduces quantity demanded."></svg>
+          <svg id="fig-lat" role="img" aria-label="Starbucks lattes: a flat demand curve; the same price increase cuts quantity demanded sharply."></svg>
+        </div>
+        <div class="legend"><span><i class="swatch" style="background:var(--ink-soft)"></i>Demand</span><span><i class="swatch" style="background:var(--loss)"></i>% drop in quantity demanded</span><span>Both start at $10 and 50 units (illustrative)</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-cut">New price (was $10)</label>
+          <span class="val" id="s-cut-val">$12.00</span>
+          <input type="range" id="s-cut" min="10" max="13" step="0.5" value="12" aria-label="New price">
+        </div>
+        <dl class="readout">
+          <dt>%&Delta;P</dt><dd id="r-dp">&mdash;</dd>
+          <dt>%&Delta;Q insulin</dt><dd id="r-steep">&mdash;</dd>
+          <dt>%&Delta;Q lattes</dt><dd id="r-flat">&mdash;</dd>
+          <dt>|E<sub>d</sub>| insulin</dt><dd id="r-esteep">&mdash;</dd>
+          <dt>|E<sub>d</sub>| lattes</dt><dd id="r-eflat">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-slope" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Determinants">
+  <div class="eyebrow"><span>Elasticity of demand</span><span class="q">Determinants</span></div>
+  <h2 class="stitle">What makes demand more elastic?</h2>
+  <div class="content">
+    <div class="col">
+      <ul class="body" style="font-size:1.72cqi">
+        <li><strong>Ease of finding substitutes:</strong> easier to substitute, more elastic.</li>
+        <li><strong>Time to adjust:</strong> more time, more substitutes found, more elastic. There are few substitutes for gasoline this month, but over years drivers buy efficient cars or switch fuels.</li>
+        <li><strong>Definition of the commodity:</strong> a narrow definition or a specific brand has more substitutes, so it is more elastic.</li>
+        <li><strong>Necessities vs. luxuries:</strong> luxuries are more elastic.</li>
+        <li><strong>Share of budget:</strong> a larger share of the budget means more elastic.</li>
+      </ul>
+    </div>
+    <div class="col narrow">
+      <table class="tbl words">
+        <thead><tr><th>Less elastic</th><th>More elastic</th></tr></thead>
+        <tbody>
+          <tr class="given"><td>Fewer substitutes</td><td>More substitutes</td></tr>
+          <tr class="given"><td>Short run</td><td>Long run</td></tr>
+          <tr class="given"><td>Broad category (cars)</td><td>Specific brand (BMW)</td></tr>
+          <tr class="given"><td>Necessities</td><td>Luxuries</td></tr>
+          <tr class="given"><td>Small part of budget</td><td>Large part of budget</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Examples">
+  <div class="eyebrow"><span>Elasticity of demand</span><span class="q">Quick examples</span></div>
+  <h2 class="stitle">Elastic vs. inelastic</h2>
+  <div class="content">
+    <div class="col">
+      <div class="qcard"><span class="n">INELASTIC</span><h3>Insulin</h3><p>A necessity with essentially no substitutes. Quantity demanded barely moves with price.</p></div>
+    </div>
+    <div class="col">
+      <div class="qcard"><span class="n">ELASTIC</span><h3>Starbucks lattes</h3><p>A small luxury with substitutes everywhere. A price increase sends buyers to home brew or another chain.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part II">
+  <span class="num">PART TWO</span>
+  <h2>Calculating the elasticity of demand</h2>
+  <p>Percentage change in quantity divided by percentage change in price, using the midpoint method.</p>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Midpoint method">
+  <div class="eyebrow"><span>Calculating elasticity</span><span class="q">The midpoint method</span></div>
+  <h2 class="stitle">Use the average as the base</h2>
+  <p class="formula"><b>E<sub>d</sub></b><span>= %&Delta;Q<sub>d</sub> &divide; %&Delta;P</span></p>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Midpoint method</dt><dd>Compute each percentage change using the average of the two values as the base, so the answer is the same whether the price rises or falls.<span class="eq">%&Delta;Q = (Q2 &minus; Q1) &divide; [(Q1 + Q2) / 2]</span><span class="eq">%&Delta;P = (P2 &minus; P1) &divide; [(P1 + P2) / 2]</span></dd></div>
+    </div>
+    <div class="col">
+      <span class="figcap"><strong>Worked example:</strong> price drops from $4 to $3; quantity rises from 120 to 150.</span>
+      <ul class="body" style="font-size:1.72cqi">
+        <li>%&Delta;Q = (150 &minus; 120) &divide; 135 = <strong>+22.22%</strong> (base: (120 + 150) / 2 = 135)</li>
+        <li>%&Delta;P = (3 &minus; 4) &divide; 3.50 = <strong>&minus;28.57%</strong> (base: (4 + 3) / 2 = 3.50)</li>
+        <li>E<sub>d</sub> = 22.22 &divide; (&minus;28.57) = <strong>&minus;0.78</strong></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: calculator">
+  <div class="eyebrow"><span>Live calculator</span><span class="q">Type in any two points</span></div>
+  <h2 class="stitle">Midpoint elasticity calculator</h2>
+  <div class="content">
+    <div class="col">
+      <table class="tbl">
+        <thead><tr><th></th><th>Point 1</th><th>Point 2</th></tr></thead>
+        <tbody>
+          <tr><td>Price ($)</td><td><input id="c-p1" type="number" step="any" value="4" aria-label="Price at point 1"></td><td><input id="c-p2" type="number" step="any" value="3" aria-label="Price at point 2"></td></tr>
+          <tr><td>Quantity</td><td><input id="c-q1" type="number" step="any" value="120" aria-label="Quantity at point 1"></td><td><input id="c-q2" type="number" step="any" value="150" aria-label="Quantity at point 2"></td></tr>
+        </tbody>
+      </table>
+      <dl class="readout" style="margin-top:1.4cqi">
+        <dt>%&Delta;Q</dt><dd id="c-dq">&mdash;</dd>
+        <dt>%&Delta;P</dt><dd id="c-dp">&mdash;</dd>
+        <dt>Elasticity</dt><dd id="c-e">&mdash;</dd>
+      </dl>
+    </div>
+    <div class="col">
+      <div class="verdict" id="v-calc" data-tone="flat">&mdash;</div>
+      <table class="tbl words">
+        <thead><tr><th>|E<sub>d</sub>|</th><th>Called</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr id="k-in"><td>&lt; 1</td><td>Inelastic</td><td>Q responds less than P</td></tr>
+          <tr id="k-el"><td>&gt; 1</td><td>Elastic</td><td>Q responds more than P</td></tr>
+          <tr id="k-un"><td>= 1</td><td>Unit elastic</td><td>Same % change</td></tr>
+        </tbody>
+      </table>
+      <p class="figcap">Demand elasticities are negative (price up, quantity down), so we usually use the absolute value.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part III">
+  <span class="num">PART THREE</span>
+  <h2>Elasticity and total revenue</h2>
+  <p>Revenue = Price &times; Quantity. Elasticity tells you what happens to revenue when the price changes.</p>
+</section>
+
+<section class="slide" data-label="Total revenue rule">
+  <div class="eyebrow"><span>Total revenue</span><span class="q">The rule</span></div>
+  <h2 class="stitle">A price change pulls revenue in two directions</h2>
+  <div class="content">
+    <div class="col">
+      <p class="formula"><b>R</b><span>= P &times; Q</span></p>
+      <ul class="body">
+        <li>A higher P raises revenue per unit, but Q falls. Elasticity tells you which effect is bigger.</li>
+        <li><strong>Inelastic demand:</strong> Q barely falls, so revenue rises when price rises.</li>
+        <li><strong>Elastic demand:</strong> Q falls a lot, so revenue falls when price rises.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <table class="tbl words">
+        <thead><tr><th>|E<sub>d</sub>|</th><th>Elasticity</th><th>Total revenue and price</th></tr></thead>
+        <tbody>
+          <tr class="given"><td>&lt; 1</td><td>Inelastic</td><td>TR and P move together</td></tr>
+          <tr class="given"><td>&gt; 1</td><td>Elastic</td><td>TR and P move in opposite directions</td></tr>
+          <tr class="given"><td>= 1</td><td>Unit elastic</td><td>P changes but TR stays the same</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: revenue">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag the price</span></div>
+  <h2 class="stitle">Revenue along a straight-line demand curve</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <div class="figpair">
+          <svg id="fig-tr" role="img" aria-label="A straight demand curve with the total revenue rectangle at the chosen price."></svg>
+          <svg id="fig-trc" role="img" aria-label="Total revenue plotted against price, rising to a peak at $5 and then falling."></svg>
+        </div>
+        <div class="legend"><span><i class="swatch" style="background:var(--ink-soft)"></i>Demand: Q = 100 &minus; 10P</span><span><i class="swatch" style="background:var(--gain)"></i>Total revenue</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-tr">Price</label>
+          <span class="val" id="s-tr-val">$3.00</span>
+          <input type="range" id="s-tr" min="0.5" max="9.5" step="0.5" value="3" aria-label="Price">
+        </div>
+        <dl class="readout">
+          <dt>Quantity</dt><dd id="r-trq">&mdash;</dd>
+          <dt>Revenue</dt><dd id="r-trr">&mdash;</dd>
+          <dt>|E<sub>d</sub>| here</dt><dd id="r-tre">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-tr" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part IV">
+  <span class="num">PART FOUR</span>
+  <h2>Applications of demand elasticity</h2>
+  <p>Why did farming shrink while tech boomed?</p>
+</section>
+
+<section class="slide" data-label="Farming vs chips">
+  <div class="eyebrow"><span>Applications</span><span class="q">Farming vs. computer chips</span></div>
+  <h2 class="stitle">Productivity soared in both industries</h2>
+  <p class="lede">Yet farm revenues fell while chip revenues rose. The difference is the elasticity of demand.</p>
+  <div class="content">
+    <div class="col">
+      <div class="qcard"><span class="n">FOOD: INELASTIC DEMAND</span><h3>Revenue falls</h3><p>Supply increases, the price falls, and quantity barely grows, so revenue falls. Good for consumers, hard on farmers.</p></div>
+    </div>
+    <div class="col">
+      <div class="qcard"><span class="n">COMPUTER CHIPS: ELASTIC DEMAND</span><h3>Revenue rises</h3><p>Supply increases, the price falls, and quantity grows a lot, so revenue rises.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-figs="pair" data-label="Live: supply increase">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Increase supply</span></div>
+  <h2 class="stitle">The same supply increase in two markets</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <div class="figpair">
+          <svg id="fig-food" role="img" aria-label="Food market with steep, inelastic demand; a supply increase lowers price a lot and raises quantity a little."></svg>
+          <svg id="fig-chip" role="img" aria-label="Chip market with flat, elastic demand; a supply increase lowers price a little and raises quantity a lot."></svg>
+        </div>
+        <div class="legend"><span><i class="swatch" style="background:var(--ink-soft)"></i>Demand</span><span><i class="swatch" style="background:var(--brine)"></i>Supply</span><span><i class="swatch" style="background:var(--gain)"></i>Revenue after</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-sup">Supply increase</label>
+          <span class="val" id="s-sup-val">+20</span>
+          <input type="range" id="s-sup" min="0" max="30" step="5" value="20" aria-label="Size of supply increase">
+        </div>
+        <dl class="readout">
+          <dt>Food revenue</dt><dd id="r-food">&mdash;</dd>
+          <dt>Chip revenue</dt><dd id="r-chip">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-sup" data-tone="flat">&mdash;</div>
+      <p class="figcap">Numbers are illustrative.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part V">
+  <span class="num">PART FIVE</span>
+  <h2>The elasticity of supply</h2>
+  <p>How responsive quantity supplied is to a change in price.</p>
+</section>
+
+<section class="slide" data-label="Supply elasticity">
+  <div class="eyebrow"><span>Elasticity of supply</span><span class="q">Definition</span></div>
+  <h2 class="stitle">The same formula, applied to sellers</h2>
+  <p class="formula"><b>E<sub>s</sub></b><span>= %&Delta;Q<sub>s</sub> &divide; %&Delta;P</span><small>midpoint method again</small></p>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Elasticity of supply (E<sub>s</sub>)</dt><dd>Measures how responsive quantity supplied is to a change in price. Supply elasticities are positive.</dd></div>
+    </div>
+    <div class="col">
+      <span class="figcap"><strong>Worked example:</strong> price rises from $40 to $50; quantity supplied rises from 100 to 120.</span>
+      <ul class="body" style="font-size:1.75cqi">
+        <li>%&Delta;Q = 20 &divide; 110 = <strong>+18.2%</strong></li>
+        <li>%&Delta;P = 10 &divide; 45 = <strong>+22.2%</strong></li>
+        <li>E<sub>s</sub> = 18.2 &divide; 22.2 = <strong>0.82</strong>, so supply is inelastic.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Supply determinants">
+  <div class="eyebrow"><span>Elasticity of supply</span><span class="q">Determinants</span></div>
+  <h2 class="stitle">How fast do per-unit costs rise with output?</h2>
+  <div class="content">
+    <div class="col">
+      <ul class="body" style="font-size:1.68cqi">
+        <li><strong>The fundamental determinant:</strong> if expanding production pushes per-unit costs up steeply, supply is inelastic. If output can grow at roughly constant unit cost, supply is elastic.</li>
+        <li><strong>Share of the input market:</strong> supply is more elastic when the industry can expand without bidding up its input prices.</li>
+        <li><strong>Local vs. global:</strong> local supply is much more elastic than global supply, because supplies can flow in from next door.</li>
+        <li><strong>Time horizon:</strong> supply is more elastic in the long run than in the short run.</li>
+      </ul>
+    </div>
+    <div class="col narrow">
+      <table class="tbl words">
+        <thead><tr><th>Less elastic</th><th>More elastic</th></tr></thead>
+        <tbody>
+          <tr class="given"><td>Hard to expand at constant cost (raw materials)</td><td>Easy to expand at constant cost (manufactured goods)</td></tr>
+          <tr class="given"><td>Large share of input market</td><td>Small share of input market</td></tr>
+          <tr class="given"><td>Global supply</td><td>Local supply</td></tr>
+          <tr class="given"><td>Short run</td><td>Long run</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-figs="pair" data-label="Picasso and toothpicks">
+  <div class="eyebrow"><span>Elasticity of supply</span><span class="q">The extremes</span></div>
+  <h2 class="stitle">Picasso paintings vs. toothpicks</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <div class="figpair">
+          <svg id="fig-pic" role="img" aria-label="A vertical supply curve for Picasso paintings: perfectly inelastic."></svg>
+          <svg id="fig-tooth" role="img" aria-label="A nearly flat supply curve for toothpicks: very elastic."></svg>
+        </div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="defs">
+        <div class="def"><dt>Picasso paintings</dt><dd>No price can produce another Picasso. Supply is vertical: perfectly inelastic.</dd></div>
+        <div class="def"><dt>Toothpicks</dt><dd>Toothpick makers can produce more at nearly constant cost. Supply is nearly flat: very elastic.</dd></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part VI">
+  <span class="num">PART SIX</span>
+  <h2>Applications of supply elasticity</h2>
+  <p>Gun buybacks and housing markets.</p>
+</section>
+
+<section class="slide" data-label="Gun buybacks">
+  <div class="eyebrow"><span>Applications</span><span class="q">Gun buybacks</span></div>
+  <h2 class="stitle">Why gun buybacks disappoint</h2>
+  <div class="content">
+    <div class="col">
+      <ul class="body">
+        <li>Several U.S. cities spent millions buying back guns to reduce the number on the street.</li>
+        <li>When police buy guns, that is an <strong>increase in demand</strong>.</li>
+        <li>The <strong>local</strong> supply of guns is very elastic, because guns flow in from surrounding areas.</li>
+      </ul>
+    </div>
+    <div class="col narrow">
+      <div class="def"><dt>The prediction</dt><dd>With elastic supply, the street price doesn&rsquo;t rise and the quantity on the street doesn&rsquo;t fall. The buyback is absorbed by guns flowing in. Economics predicts these programs don&rsquo;t reduce the number of guns on the street.</dd></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-figs="pair" data-label="Live: housing">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag the demand increase</span></div>
+  <h2 class="stitle">Same demand boom, different price booms</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <div class="figpair">
+          <svg id="fig-h1" role="img" aria-label="Housing in a city with inelastic supply: a demand increase raises the price a lot and quantity a little."></svg>
+          <svg id="fig-h2" role="img" aria-label="Housing in a city with elastic supply: a demand increase raises quantity a lot and the price barely moves."></svg>
+        </div>
+        <div class="legend"><span><i class="swatch" style="background:var(--brine)"></i>Supply</span><span><i class="swatch" style="background:var(--ink-faint)"></i>D</span><span><i class="swatch" style="background:var(--crude)"></i>D&prime; after the boom</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-h">Demand increase</label>
+          <span class="val" id="s-h-val">+30</span>
+          <input type="range" id="s-h" min="0" max="40" step="5" value="30" aria-label="Size of demand increase">
+        </div>
+        <dl class="readout">
+          <dt>Inelastic city</dt><dd id="r-h1">&mdash;</dd>
+          <dt>Elastic city</dt><dd id="r-h2">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-h" data-tone="flat">&mdash;</div>
+      <p class="figcap">Inelastic-supply cities have geography or zoning that limits building. Prices in $ thousands; numbers are illustrative.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Quick predictions">
+  <div class="eyebrow"><span>Optional</span><span class="q">Quick predictions</span></div>
+  <h2 class="stitle">Turning a shift into a price prediction</h2>
+  <p class="formula"><b>%&Delta;P</b><span>&asymp; %&Delta;Q &divide; (|E<sub>d</sub>| + E<sub>s</sub>)</span></p>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Drilling in the Arctic (ANWR)</dt><dd>Estimated new production: 800,000 barrels a day, about a 1% increase in world output. With E<sub>d</sub> = &minus;0.5 and E<sub>s</sub> = 0.3: 1% &divide; (0.5 + 0.3) = a <strong>1.25% drop</strong> in the world price.</dd></div>
+      <p class="figcap">A big drilling project, but a small effect on the price.</p>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl"><label for="s-qp">Shift in quantity</label><span class="val" id="s-qp-val">1.0%</span><input type="range" id="s-qp" min="0.5" max="10" step="0.5" value="1" aria-label="Percent shift in quantity"></div>
+        <div class="ctrl"><label for="s-ed">|E<sub>d</sub>|</label><span class="val" id="s-ed-val">0.5</span><input type="range" id="s-ed" min="0.1" max="3" step="0.1" value="0.5" aria-label="Absolute elasticity of demand"></div>
+        <div class="ctrl"><label for="s-es">E<sub>s</sub></label><span class="val" id="s-es-val">0.3</span><input type="range" id="s-es" min="0.1" max="3" step="0.1" value="0.3" aria-label="Elasticity of supply"></div>
+      </div>
+      <div class="verdict" id="v-qp" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Self-check">
+  <div class="eyebrow"><span>Quiz self-check</span><span class="q">Be able to answer</span></div>
+  <h2 class="stitle">Questions to answer without notes</h2>
+  <div class="qcards qgrid6">
+    <div class="qcard"><span class="n">QUESTION 1</span><h3>Is demand for BMWs more or less elastic than demand for cars in general?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>More elastic. Specific brands are more elastic than general categories, and luxuries are more elastic than necessities.</p></div>
+    <div class="qcard"><span class="n">QUESTION 2</span><h3>Price drops from $4 to $3 and quantity rises from 120 to 150. What is E<sub>d</sub>?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>22.22% &divide; (&minus;28.57%) = <strong>&minus;0.78</strong>, so demand is inelastic.</p></div>
+    <div class="qcard"><span class="n">QUESTION 3</span><h3>An elasticity of 1.27 means demand is&hellip;?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden><strong>Elastic</strong>, because 1.27 &gt; 1.</p></div>
+    <div class="qcard"><span class="n">QUESTION 4</span><h3>Wine has |E<sub>d</sub>| = 1.2. The price rises. What happens to industry revenue?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>Revenue <strong>decreases</strong>, because demand is elastic.</p></div>
+    <div class="qcard"><span class="n">QUESTION 5</span><h3>iPhone demand is inelastic. Supply increases. What happens to revenue?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>Revenue <strong>decreases</strong>. The extra units sold are outweighed by the larger price drop.</p></div>
+    <div class="qcard"><span class="n">QUESTION 6</span><h3>Is the supply of roofing nails in Fargo, ND elastic or inelastic?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden><strong>Elastic.</strong> Nails are easy to make at constant unit cost, they are a tiny share of the steel market, and local supply is more elastic than global supply.</p></div>
+  </div>
+</section>
+
+<section class="slide" data-label="Takeaway">
+  <div class="eyebrow"><span>Takeaway</span></div>
+  <h2 class="stitle">Summary</h2>
+  <div class="takes">
+    <div class="take"><h3>Demand</h3><p>Elasticity of demand measures how responsive quantity demanded is to price. Compute it with the <em>midpoint method</em>.</p></div>
+    <div class="take"><h3>Revenue</h3><p>|E<sub>d</sub>| &lt; 1: TR and P <em>move together</em>. |E<sub>d</sub>| &gt; 1: they move in <em>opposite directions</em>.</p></div>
+    <div class="take"><h3>Determinants</h3><p>Substitutes, time, brand vs. category, luxury vs. necessity, and budget share.</p></div>
+    <div class="take"><h3>Supply</h3><p>Elasticity of supply depends on how fast per-unit costs rise, and it is higher <em>locally</em> and in the <em>long run</em>.</p></div>
+    <div class="take"><h3>Applications</h3><p>Shrinking farm revenue, gun buybacks that don&rsquo;t work, and why housing booms raise prices in some cities and construction in others.</p></div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Key terms">
+  <div class="eyebrow"><span>Reference</span><span class="q">Key terms</span></div>
+  <h2 class="stitle">Key terms</h2>
+  <div class="terms">
+    <div class="term"><b>Elasticity of demand (E<sub>d</sub>)</b><span>%&Delta; quantity demanded &divide; %&Delta; price. Interpret the absolute value.</span></div>
+    <div class="term"><b>Midpoint method</b><span>Use the average of the two P&rsquo;s (and Q&rsquo;s) as the base for % changes.</span></div>
+    <div class="term"><b>Inelastic / elastic / unit elastic</b><span>|E<sub>d</sub>| &lt; 1 / |E<sub>d</sub>| &gt; 1 / |E<sub>d</sub>| = 1.</span></div>
+    <div class="term"><b>Total-revenue rule</b><span>Inelastic: TR moves with P. Elastic: TR moves opposite P. Unit elastic: TR unchanged.</span></div>
+    <div class="term"><b>Elasticity of supply (E<sub>s</sub>)</b><span>%&Delta; quantity supplied &divide; %&Delta; price. Depends on how fast unit costs rise.</span></div>
+    <div class="term"><b>Elasticity rule</b><span>From the same starting point, the flatter curve is more elastic.</span></div>
+    <div class="term"><b>Quick-prediction formula</b><span>%&Delta;P &asymp; %&Delta;Q &divide; (|E<sub>d</sub>| + E<sub>s</sub>).</span></div>
+  </div>
+</section>
+
+    </div>
+  </div>
+  <nav class="nav" aria-label="Slide navigation">
+    <button class="navbtn" id="prev" aria-label="Previous slide">&#8249;</button>
+    <button class="navbtn" id="next" aria-label="Next slide">&#8250;</button>
+    <div class="rail" id="rail" role="tablist" aria-label="Slides"></div>
+    <span class="counter" id="counter">1 / 1</span>
+    <span class="hint">&#8592; &#8594; to move &#183; drag any slider</span>
+  </nav>
+</div>
+
+<script>
+(function(){
+"use strict";
+var NS="http://www.w3.org/2000/svg";
+function E(n,a,t){var e=document.createElementNS(NS,n);for(var k in a){if(a[k]!==null&&a[k]!==undefined)e.setAttribute(k,a[k]);}if(t!==undefined)e.textContent=t;return e;}
+function C(n){return "var("+n+")";}
+function money(v,d){return "$"+Number(v).toFixed(d===undefined?2:d);}
+var MINUS="\u2212";
+function signed(v,d){return v<0?MINUS+money(-v,d):money(v,d);}
+
+function Frame(svg,o){
+  var W=o.W||440,H=o.H||300,L=(o.L===undefined?50:o.L),R=(o.R===undefined?16:o.R),T=(o.T===undefined?16:o.T),B=(o.B===undefined?40:o.B);
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  var x0=o.x0||0,x1=o.x1,y0=(o.y0===undefined?0:o.y0),y1=o.y1;
+  var f={svg:svg,W:W,H:H,x0:x0,x1:x1,y0:y0,y1:y1,
+    x:function(v){return L+(v-x0)/(x1-x0)*(W-L-R);},
+    y:function(v){return H-B-(v-y0)/(y1-y0)*(H-T-B);},
+    add:function(e){svg.appendChild(e);return e;}};
+  f.left=L; f.right=W-R; f.top=T; f.bottom=H-B;
+  f.add(E("path",{d:"M"+L+" "+T+" L"+L+" "+(H-B)+" L"+(W-R)+" "+(H-B),fill:"none",stroke:C("--rule"),"stroke-width":1.2}));
+  if(o.xlabel)f.add(E("text",{x:(L+W-R)/2,y:H-6,fill:C("--ink-faint"),"font-size":11,"text-anchor":"middle","font-family":"'Source Sans 3',sans-serif"},o.xlabel));
+  if(o.ylabel)f.add(E("text",{x:-(T+H-B)/2,y:13,fill:C("--ink-faint"),"font-size":11,"text-anchor":"middle",transform:"rotate(-90)","font-family":"'Source Sans 3',sans-serif"},o.ylabel));
+  return f;
+}
+function line(f,ax,ay,bx,by,stroke,w,dash){return f.add(E("line",{x1:f.x(ax),y1:f.y(ay),x2:f.x(bx),y2:f.y(by),stroke:stroke,"stroke-width":w||2,"stroke-dasharray":dash||null,"stroke-linecap":"round"}));}
+function curve(f,fn,a,b,stroke,w,dash){
+  var d="",i,q,v;
+  for(i=0;i<=140;i++){q=a+(b-a)*i/140; v=fn(q); if(!isFinite(v)||v>f.y1||v<f.y0){d="";continue;} d+=(d===""?"M":"L")+f.x(q).toFixed(2)+" "+f.y(v).toFixed(2);}
+  return f.add(E("path",{d:d,fill:"none",stroke:stroke,"stroke-width":w||2,"stroke-linejoin":"round","stroke-dasharray":dash||null}));
+}
+function lab(f,px,py,txt,fill,size,anchor){return f.add(E("text",{x:px,y:py,fill:fill,"font-size":size||11,"text-anchor":anchor||"start","font-weight":600,"font-family":"'IBM Plex Mono',monospace"},txt));}
+function cross(f,qx,py){
+  f.add(E("path",{d:"M"+f.x(qx)+" "+f.bottom+" L"+f.x(qx)+" "+f.y(py),stroke:C("--crude"),"stroke-width":1.1,"stroke-dasharray":"3 3",fill:"none"}));
+  f.add(E("path",{d:"M"+f.left+" "+f.y(py)+" L"+f.x(qx)+" "+f.y(py),stroke:C("--crude"),"stroke-width":1.1,"stroke-dasharray":"3 3",fill:"none"}));
+  f.add(E("circle",{cx:f.x(qx),cy:f.y(py),r:3.6,fill:C("--crude")}));
+}
+function xticks(f,v,fmt){v.forEach(function(t){
+  f.add(E("line",{x1:f.x(t),x2:f.x(t),y1:f.bottom,y2:f.bottom+4,stroke:C("--rule"),"stroke-width":1}));
+  f.add(E("text",{x:f.x(t),y:f.bottom+15,fill:C("--ink-faint"),"font-size":10,"text-anchor":"middle","font-family":"'IBM Plex Mono',monospace"},fmt?fmt(t):String(t)));});}
+function yticks(f,v,fmt){v.forEach(function(t){
+  f.add(E("line",{x1:f.left-4,x2:f.left,y1:f.y(t),y2:f.y(t),stroke:C("--rule"),"stroke-width":1}));
+  f.add(E("text",{x:f.left-7,y:f.y(t)+3.4,fill:C("--ink-faint"),"font-size":10,"text-anchor":"end","font-family":"'IBM Plex Mono',monospace"},fmt?fmt(t):String(t)));});}
+function hatchDefs(f){
+  var d=E("defs"),p=E("pattern",{id:"dwlhatch",width:6,height:6,patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"});
+  p.appendChild(E("rect",{width:6,height:6,fill:C("--loss-fill")}));
+  p.appendChild(E("line",{x1:0,y1:0,x2:0,y2:6,stroke:C("--loss"),"stroke-width":1.6,opacity:.75}));
+  d.appendChild(p); f.add(d);
+}
+function V(id,tone,html){var e=document.getElementById(id); if(!e)return; e.dataset.tone=tone; e.innerHTML=html;}
+
+
+function f2(v){return (Math.round(v*100)/100).toFixed(2);}
+function pct(v){return (v>0?"+":v<0?"−":"")+Math.abs(v*100).toFixed(2)+"%";}
+function usd0(v){return "$"+Math.round(v).toLocaleString();}
+function mid(a,b){return (b-a)/((a+b)/2);}
+
+/* ============ Live 1: insulin (steep) vs lattes (flat), both start at $10, 50 units ============ */
+function units(n){n=Math.round(n*10)/10;return (n%1?n.toFixed(1):String(n))+(Math.abs(n)===1?" unit":" units");}
+function qIns(p){return 50-0.5*(p-10);} function qLat(p){return Math.max(0,50-12.5*(p-10));}
+function pc1(v){return (v>0?"+":v<0?"\u2212":"")+Math.abs(v*100).toFixed(1)+"%";}
+function panel(svgId,name,qf,p,pts){
+  var f=Frame(document.getElementById(svgId),{W:300,H:290,L:40,R:12,T:26,B:38,x1:100,y1:16,xlabel:"Quantity",ylabel:"Price ($)"});
+  f.add(E("text",{x:f.right,y:14,fill:C("--ink"),"font-size":13,"text-anchor":"end","font-weight":600,"font-family":"Spectral,Georgia,serif"},name));
+  yticks(f,[5,10,15],function(v){return "$"+v;}); xticks(f,[0,50,100]);
+  line(f,pts[0],pts[1],pts[2],pts[3],C("--ink-soft"),2.4);
+  var q=qf(p);
+  f.add(E("circle",{cx:f.x(50),cy:f.y(10),r:4,fill:C("--stage"),stroke:C("--ink-soft"),"stroke-width":1.8}));
+  f.add(E("line",{x1:f.left,x2:f.x(50),y1:f.y(10),y2:f.y(10),stroke:C("--rule"),"stroke-width":1,"stroke-dasharray":"3 3"}));
+  if(p>10){
+    f.add(E("line",{x1:f.x(q),x2:f.x(50),y1:f.bottom-5,y2:f.bottom-5,stroke:C("--loss"),"stroke-width":6,opacity:.9}));
+    cross(f,q,p);
+    lab(f,q<30?f.x(q)+5:f.x(q)-5,f.bottom-12,pc1(mid(50,q)),C("--loss"),10.5,q<30?"start":"end");
+  }
+  return q;
+}
+function drawSlope(p){
+  var qi=panel("fig-ins","Insulin",qIns,p,[47,16,55,0]);
+  var ql=panel("fig-lat","Starbucks lattes",qLat,p,[0,14,100,6]);
+  if(p<=10){
+    ["r-dp","r-steep","r-flat","r-esteep","r-eflat"].forEach(function(id){document.getElementById(id).textContent="\u2014";});
+    V("v-slope","flat","<strong>No price change yet.</strong> Both goods sell 50 units at $10. Drag the price up.");
+    return;
+  }
+  var dp=mid(10,p), dqi=mid(50,qi), dql=mid(50,ql);
+  document.getElementById("r-dp").textContent=pc1(dp);
+  document.getElementById("r-steep").textContent=pc1(dqi);
+  document.getElementById("r-flat").textContent=pc1(dql);
+  document.getElementById("r-esteep").textContent=f2(Math.abs(dqi/dp));
+  document.getElementById("r-eflat").textContent=f2(Math.abs(dql/dp));
+  V("v-slope","gain","<strong>Price up "+pc1(dp).slice(1)+" for both.</strong> Insulin quantity falls "+pc1(dqi).slice(1)+", because there is no substitute. Latte quantity falls "+pc1(dql).slice(1)+", because buyers can brew at home or go elsewhere.");
+}
+
+/* ============ Live 2: midpoint calculator ============ */
+function calc(){
+  var g=function(id){return parseFloat(document.getElementById(id).value);};
+  var p1=g("c-p1"),p2=g("c-p2"),q1=g("c-q1"),q2=g("c-q2");
+  ["k-in","k-el","k-un"].forEach(function(id){document.getElementById(id).className="";});
+  if([p1,p2,q1,q2].some(function(v){return !isFinite(v);})||p1+p2===0||q1+q2===0){
+    ["c-dq","c-dp","c-e"].forEach(function(id){document.getElementById(id).textContent="—";});
+    V("v-calc","flat","Enter four numbers to calculate."); return;
+  }
+  var dq=mid(q1,q2), dp=mid(p1,p2);
+  document.getElementById("c-dq").textContent=pct(dq);
+  document.getElementById("c-dp").textContent=pct(dp);
+  if(dp===0){document.getElementById("c-e").textContent="—";V("v-calc","flat","The price didn&rsquo;t change, so elasticity can&rsquo;t be calculated.");return;}
+  var e=dq/dp, a=Math.abs(e);
+  document.getElementById("c-e").textContent=(e<0?"−":"")+a.toFixed(2);
+  var steps="%&Delta;Q = ("+q2+" &minus; "+q1+") &divide; "+((q1+q2)/2)+" = "+pct(dq)+". %&Delta;P = ("+p2+" &minus; "+p1+") &divide; "+((p1+p2)/2)+" = "+pct(dp)+". ";
+  if(Math.abs(a-1)<0.005){document.getElementById("k-un").className="hi";V("v-calc","flat","<strong>Unit elastic.</strong> "+steps+"|E| = 1.");}
+  else if(a<1){document.getElementById("k-in").className="hi";V("v-calc","flat","<strong>Inelastic: |E| = "+a.toFixed(2)+" &lt; 1.</strong> "+steps);}
+  else {document.getElementById("k-el").className="hi";V("v-calc","gain","<strong>Elastic: |E| = "+a.toFixed(2)+" &gt; 1.</strong> "+steps);}
+}
+
+/* ============ Live 3: revenue on Q = 100 - 10P ============ */
+function drawTR(p){
+  var q=100-10*p, tr=p*q;
+  var f=Frame(document.getElementById("fig-tr"),{W:300,H:290,L:40,R:12,T:16,B:38,x1:105,y1:10.5,xlabel:"Quantity",ylabel:"Price ($)"});
+  f.add(E("rect",{x:f.x(0),y:f.y(p),width:f.x(q)-f.x(0),height:f.y(0)-f.y(p),fill:C("--gain-fill"),stroke:C("--gain"),"stroke-width":1.2}));
+  yticks(f,[5,10],function(v){return "$"+v;}); xticks(f,[50,100]);
+  line(f,0,10,100,0,C("--ink-soft"),2.4);
+  cross(f,q,p);
+  lab(f,f.x(q/2),f.y(p/2)+4,"TR",C("--gain"),12,"middle");
+  var g=Frame(document.getElementById("fig-trc"),{W:300,H:290,L:58,R:12,T:16,B:38,x1:10.5,y1:280,xlabel:"Price ($)",ylabel:"Total revenue ($)"});
+  yticks(g,[100,200],function(v){return "$"+v;}); xticks(g,[0,5,10],function(v){return "$"+v;});
+  curve(g,function(x){return x*(100-10*x);},0,10,C("--gain"),2.4);
+  g.add(E("line",{x1:g.x(5),x2:g.x(5),y1:g.y(250),y2:g.bottom,stroke:C("--rule"),"stroke-width":1,"stroke-dasharray":"3 3"}));
+  lab(g,g.x(2.5),g.top+10,"inelastic",C("--ink-faint"),10,"middle");
+  lab(g,g.x(7.5),g.top+10,"elastic",C("--ink-faint"),10,"middle");
+  cross(g,p,tr);
+  var e=10*p/q;
+  document.getElementById("r-trq").textContent=q.toFixed(0);
+  document.getElementById("r-trr").textContent=usd0(tr);
+  document.getElementById("r-tre").textContent=e.toFixed(2);
+  if(Math.abs(p-5)<1e-9)V("v-tr","flat","<strong>Unit elastic at $5.</strong> Revenue is at its maximum, $250. A small price change either way leaves revenue about the same.");
+  else if(p<5)V("v-tr","gain","<strong>Inelastic here (|E<sub>d</sub>| = "+e.toFixed(2)+").</strong> TR and P move together: raising the price from $"+p.toFixed(2)+" would increase revenue.");
+  else V("v-tr","loss","<strong>Elastic here (|E<sub>d</sub>| = "+e.toFixed(2)+").</strong> TR and P move in opposite directions: raising the price from $"+p.toFixed(2)+" would lower revenue.");
+}
+
+/* ============ Live 4: supply increase, food vs chips ============ */
+function mkt(svgId,name,kind,s){
+  var f=Frame(document.getElementById(svgId),{W:300,H:290,L:40,R:12,T:26,B:38,x1:100,y1:16,xlabel:"Quantity",ylabel:"Price ($)"});
+  f.add(E("text",{x:f.right,y:14,fill:C("--ink"),"font-size":13,"text-anchor":"end","font-weight":600,"font-family":"Spectral,Georgia,serif"},name));
+  var q,p;
+  if(kind==="food"){q=50+0.25*s;p=10-0.15*s;} else {q=50+0.8*s;p=10-0.04*s;}
+  f.add(E("rect",{x:f.x(0),y:f.y(p),width:f.x(q)-f.x(0),height:f.y(0)-f.y(p),fill:C("--gain-fill"),stroke:"none"}));
+  f.add(E("rect",{x:f.x(0),y:f.y(10),width:f.x(50)-f.x(0),height:f.y(0)-f.y(10),fill:"none",stroke:C("--ink-faint"),"stroke-width":1.1,"stroke-dasharray":"4 3"}));
+  yticks(f,[5,10,15],function(v){return "$"+v;}); xticks(f,[50]);
+  if(kind==="food")line(f,40,16,66.7,0,C("--ink-soft"),2.4); else line(f,0,12.5,100,7.5,C("--ink-soft"),2.4);
+  line(f,0,0,80,16,s>0?C("--ink-faint"):C("--brine"),2,s>0?"5 4":null);
+  if(s>0)line(f,s,0,Math.min(100,80+s),0.2*(Math.min(100,80+s)-s),C("--brine"),2.4);
+  lab(f,f.x(kind==="food"?44:6),f.y(kind==="food"?15.5:12.5)-6,"D",C("--ink-soft"),12,"start");
+  cross(f,q,p);
+  return {tr:p*q,p:p,q:q};
+}
+function drawSup(s){
+  var a=mkt("fig-food","Food (inelastic D)","food",s), b=mkt("fig-chip","Chips (elastic D)","chip",s);
+  document.getElementById("r-food").textContent="$500 → "+usd0(a.tr);
+  document.getElementById("r-chip").textContent="$500 → "+usd0(b.tr);
+  if(s===0)V("v-sup","flat","<strong>Before the supply increase.</strong> Both markets start at $10 and 50 units, with revenue of $500. Drag the slider.");
+  else V("v-sup","gain","<strong>Food:</strong> price falls to $"+a.p.toFixed(2)+" but quantity only reaches "+q1(a.q)+", so revenue falls. <strong>Chips:</strong> price falls only to $"+b.p.toFixed(2)+" and quantity jumps to "+q1(b.q)+", so revenue rises.");
+}
+function q1(v){return (Math.round(v*10)/10).toString();}
+
+/* ============ static: Picasso vs toothpicks ============ */
+function drawExtremes(){
+  var a=Frame(document.getElementById("fig-pic"),{W:300,H:290,L:30,R:12,T:26,B:30,x1:10,y1:10,xlabel:"Quantity",ylabel:"Price"});
+  a.add(E("text",{x:a.right,y:14,fill:C("--ink"),"font-size":13,"text-anchor":"end","font-weight":600,"font-family":"Spectral,Georgia,serif"},"Picasso paintings"));
+  line(a,4,0.3,4,9.5,C("--brine"),2.6); lab(a,a.x(4)+8,a.y(9)+4,"S (perfectly inelastic)",C("--brine"),10.5,"start");
+  var b=Frame(document.getElementById("fig-tooth"),{W:300,H:290,L:30,R:12,T:26,B:30,x1:10,y1:10,xlabel:"Quantity",ylabel:"Price"});
+  b.add(E("text",{x:b.right,y:14,fill:C("--ink"),"font-size":13,"text-anchor":"end","font-weight":600,"font-family":"Spectral,Georgia,serif"},"Toothpicks"));
+  line(b,0.3,3.6,9.7,4.2,C("--brine"),2.6); lab(b,b.x(9.7),b.y(4.2)-10,"S (very elastic)",C("--brine"),10.5,"end");
+}
+
+/* ============ Live 5: housing in two cities ============ */
+function city(svgId,name,k,d){
+  var f=Frame(document.getElementById(svgId),{W:300,H:290,L:58,R:12,T:26,B:38,x1:100,y1:230,xlabel:"Homes",ylabel:"Price ($ thousands)"});
+  f.add(E("text",{x:f.right,y:14,fill:C("--ink"),"font-size":13,"text-anchor":"end","font-weight":600,"font-family":"Spectral,Georgia,serif"},name));
+  yticks(f,[100,200],function(v){return "$"+v;}); xticks(f,[50]);
+  var sq0=Math.max(0,50-100/k), sq1=Math.min(100,50+130/k);
+  line(f,sq0,100+k*(sq0-50),sq1,100+k*(sq1-50),C("--brine"),2.4);
+  lab(f,f.x(sq1)+(k>1?6:-4),f.y(100+k*(sq1-50))+(k>1?10:-8),"S",C("--brine"),12,k>1?"start":"end");
+  line(f,6.7,230,83.3,0,d>0?C("--ink-faint"):C("--ink-soft"),2.2,d>0?"5 4":null);
+  var dq=3*d/(k+3), dp=3*k*d/(k+3);
+  if(d>0){var e=Math.min(100,83.3+d); line(f,6.7+d,230,e,250-3*(e-d),C("--crude"),2.4); lab(f,f.x(6.7+d)+6,f.y(222),"D′",C("--crude"),11.5,"start");}
+  f.add(E("circle",{cx:f.x(50),cy:f.y(100),r:4,fill:C("--stage"),stroke:C("--ink-soft"),"stroke-width":1.8}));
+  lab(f,f.x(50)-7,f.y(100)+15,"E",C("--ink-soft"),11,"end");
+  if(d>0){cross(f,50+dq,100+dp); lab(f,f.x(50+dq)+7,f.y(100+dp)-7,"E′",C("--crude"),11,"start");}
+  return {p:100+dp,q:50+dq};
+}
+function drawHousing(d){
+  var a=city("fig-h1","Inelastic-supply city",10.5,d), b=city("fig-h2","Elastic-supply city",0.15,d);
+  document.getElementById("r-h1").textContent="$100k → $"+Math.round(a.p)+"k";
+  document.getElementById("r-h2").textContent="$100k → $"+Math.round(b.p)+"k";
+  if(d===0)V("v-h","flat","<strong>Before the boom.</strong> Both cities start at $100k. Drag the demand increase.");
+  else V("v-h","gain","<strong>Same demand increase.</strong> The inelastic city&rsquo;s price jumps to $"+Math.round(a.p)+"k with only "+q1(a.q-50)+" more homes. The elastic city&rsquo;s price barely moves ($"+Math.round(b.p)+"k), and "+q1(b.q-50)+" more homes are built.");
+}
+
+/* ============ Live 6: quick prediction ============ */
+function quick(){
+  var q=+document.getElementById("s-qp").value, ed=+document.getElementById("s-ed").value, es=+document.getElementById("s-es").value;
+  document.getElementById("s-qp-val").textContent=q.toFixed(1)+"%";
+  document.getElementById("s-ed-val").textContent=ed.toFixed(1);
+  document.getElementById("s-es-val").textContent=es.toFixed(1);
+  var p=q/(ed+es);
+  V("v-qp",p>=1?"loss":"flat","<strong>Price change &asymp; "+p.toFixed(2)+"%.</strong> "+q.toFixed(1)+"% &divide; ("+ed.toFixed(1)+" + "+es.toFixed(1)+") = "+p.toFixed(2)+"%. More elastic demand or supply means a smaller price effect.");
+}
+
+/* ---------------- wiring ---------------- */
+function on(id,fn){var e=document.getElementById(id); if(e)e.addEventListener("input",fn);}
+on("s-cut",function(e){var v=+e.target.value;document.getElementById("s-cut-val").textContent="$"+v.toFixed(2);drawSlope(v);});
+drawSlope(12);
+["c-p1","c-p2","c-q1","c-q2"].forEach(function(id){on(id,calc);}); calc();
+on("s-tr",function(e){var v=+e.target.value;document.getElementById("s-tr-val").textContent="$"+v.toFixed(2);drawTR(v);});
+drawTR(3);
+on("s-sup",function(e){var v=+e.target.value;document.getElementById("s-sup-val").textContent="+"+v;drawSup(v);});
+drawSup(20);
+drawExtremes();
+on("s-h",function(e){var v=+e.target.value;document.getElementById("s-h-val").textContent="+"+v;drawHousing(v);});
+drawHousing(30);
+["s-qp","s-ed","s-es"].forEach(function(id){on(id,quick);}); quick();
+Array.prototype.forEach.call(document.querySelectorAll("button.reveal"),function(btn){
+  btn.addEventListener("click",function(){
+    var ans=btn.nextElementSibling, open=ans.hidden;
+    ans.hidden=!open; btn.setAttribute("aria-expanded",open?"true":"false");
+    btn.textContent=open?"Hide answer":"Show answer";
+  });
+});
+/* keep typing and button presses from changing slides */
+Array.prototype.forEach.call(document.querySelectorAll('input[type=number], select, button.reveal, button.b'),function(el){
+  el.addEventListener("keydown",function(e){if(e.key===" "||e.key==="ArrowLeft"||e.key==="ArrowRight"||e.key==="Home"||e.key==="End")e.stopPropagation();});
+});
+
+var slides=Array.prototype.slice.call(document.querySelectorAll(".slide"));
+var rail=document.getElementById("rail"), counter=document.getElementById("counter"), cur=0;
+slides.forEach(function(s,i){
+  var b=document.createElement("button"); b.type="button"; b.setAttribute("role","tab");
+  b.setAttribute("aria-label","Slide "+(i+1)+": "+(s.dataset.label||"")); b.title=(i+1)+". "+(s.dataset.label||"");
+  b.addEventListener("click",function(){go(i);}); rail.appendChild(b);
+});
+function go(i){
+  cur=Math.max(0,Math.min(slides.length-1,i));
+  slides.forEach(function(s,j){s.classList.toggle("on",j===cur);});
+  Array.prototype.forEach.call(rail.children,function(b,j){b.setAttribute("aria-current",j===cur?"true":"false");});
+  counter.textContent=(cur+1)+" / "+slides.length;
+}
+document.getElementById("prev").addEventListener("click",function(){go(cur-1);});
+document.getElementById("next").addEventListener("click",function(){go(cur+1);});
+document.addEventListener("keydown",function(e){
+  var t=e.target.tagName;
+  if(t==="INPUT"&&e.target.type==="text")return;
+  if(t==="INPUT"&&e.target.type==="range"&&(e.key==="ArrowLeft"||e.key==="ArrowRight"))return;
+  if(e.key==="ArrowRight"||e.key==="PageDown"||e.key===" "){go(cur+1);e.preventDefault();}
+  else if(e.key==="ArrowLeft"||e.key==="PageUp"){go(cur-1);e.preventDefault();}
+  else if(e.key==="Home")go(0); else if(e.key==="End")go(slides.length-1);
+});
+go(0);
+})();
+</script>
+</body>
+</html>
