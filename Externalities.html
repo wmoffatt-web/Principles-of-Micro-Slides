@@ -1,0 +1,926 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Externalities</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ink:#16211E; --ink-soft:#44544F; --ink-faint:#7C8C87;
+  --paper:#F2F4F3; --surface:#FFFFFF; --surface-2:#E7EBE9;
+  --rule:#CBD4D1; --rule-soft:#DFE5E3;
+  --crude:#C47418; --crude-soft:#F0DCBE;
+  --brine:#3F7A72; --brine-soft:#D7E6E3;
+  --gain:#2E7D52; --gain-fill:rgba(46,125,82,.16);
+  --loss:#B5432F; --loss-fill:rgba(181,67,47,.16);
+  --stage:#FFFFFF; --shadow:0 1px 2px rgba(22,33,30,.06),0 10px 34px rgba(22,33,30,.10);
+}
+:root:not([data-theme="light"]) { color-scheme: light dark; }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#E7EDEA; --ink-soft:#A6B5B0; --ink-faint:#74857F;
+    --paper:#0E1A17; --surface:#16241F; --surface-2:#1E302A;
+    --rule:#2E443D; --rule-soft:#243730;
+    --crude:#E0A050; --crude-soft:#3B2E18;
+    --brine:#7FB8AF; --brine-soft:#1B312D;
+    --gain:#5FBE8A; --gain-fill:rgba(95,190,138,.18);
+    --loss:#E2836C; --loss-fill:rgba(226,131,108,.18);
+    --stage:#13201C; --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 40px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#E7EDEA; --ink-soft:#A6B5B0; --ink-faint:#74857F;
+  --paper:#0E1A17; --surface:#16241F; --surface-2:#1E302A;
+  --rule:#2E443D; --rule-soft:#243730;
+  --crude:#E0A050; --crude-soft:#3B2E18;
+  --brine:#7FB8AF; --brine-soft:#1B312D;
+  --gain:#5FBE8A; --gain-fill:rgba(95,190,138,.18);
+  --loss:#E2836C; --loss-fill:rgba(226,131,108,.18);
+  --stage:#13201C; --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 40px rgba(0,0,0,.45);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Sans 3",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  margin:0; min-height:100vh; display:flex; flex-direction:column;
+}
+h1,h2,h3{font-family:Spectral,Georgia,"Times New Roman",serif; font-weight:600; text-wrap:balance; margin:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+/* ---------- shell ---------- */
+.shell{flex:1; display:flex; flex-direction:column; min-height:0; padding:14px 16px 0}
+.stagewrap{flex:1; display:flex; align-items:center; justify-content:center; min-height:0}
+.stage{
+  container-type:inline-size;
+  width:100%; max-width:min(1420px, calc((100vh - 118px) * 16 / 9)); aspect-ratio:16/9;
+  background:var(--stage); border:1px solid var(--rule-soft); border-radius:3px;
+  box-shadow:var(--shadow); position:relative; overflow:hidden;
+}
+.slide{position:absolute; inset:0; padding:4.2cqi 5cqi 4.4cqi; display:none; flex-direction:column; gap:2.2cqi}
+.slide.on{display:flex}
+.slide[data-pad="tight"]{padding:3.2cqi 4cqi 3.4cqi; gap:1.6cqi}
+
+/* ---------- slide furniture ---------- */
+.eyebrow{
+  font-size:1.18cqi; letter-spacing:.17em; text-transform:uppercase; font-weight:700;
+  color:var(--crude); display:flex; gap:.9em; align-items:baseline;
+}
+.eyebrow .q{color:var(--ink-faint); letter-spacing:.17em}
+.stitle{font-size:4.1cqi; line-height:1.08; letter-spacing:-.01em}
+.slide[data-pad="tight"] .stitle{font-size:3.3cqi}
+.lede{font-size:2.05cqi; line-height:1.45; color:var(--ink-soft); max-width:46ch}
+.body{display:flex; flex-direction:column; gap:1.1cqi; font-size:1.95cqi; line-height:1.42}
+.body li{margin:0}
+ul.body{list-style:none; padding:0}
+ul.body li{position:relative; padding-left:1.5em}
+ul.body li::before{content:""; position:absolute; left:.2em; top:.62em; width:.5em; height:.5em; background:var(--crude); border-radius:50%}
+ul.body li ul{list-style:none; padding:.5em 0 0 0; display:flex; flex-direction:column; gap:.45em; font-size:.88em; color:var(--ink-soft)}
+ul.body li ul li::before{width:.42em; height:.42em; background:none; border:1px solid var(--brine); top:.55em}
+.content{flex:1; display:flex; gap:3cqi; min-height:0}
+.col{flex:1; display:flex; flex-direction:column; gap:1.6cqi; min-width:0}
+.col.narrow{flex:0 0 32cqi}
+.col.wide{flex:1.5}
+
+/* ---------- definition cards ---------- */
+.defs{display:flex; flex-direction:column; gap:1.3cqi}
+.defgrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.3cqi}
+.def{background:var(--surface-2); border-radius:2px; padding:1.5cqi 1.8cqi; display:flex; flex-direction:column; gap:.5cqi}
+.def dt{font-family:Spectral,Georgia,serif; font-weight:700; font-size:2cqi; color:var(--ink)}
+.def dd{margin:0; font-size:1.72cqi; line-height:1.38; color:var(--ink-soft)}
+.def .eq{font-family:"IBM Plex Mono",monospace; font-size:1.6cqi; color:var(--crude); font-weight:500; letter-spacing:.02em}
+
+.formula{margin:0; font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:2.9cqi; font-weight:500;
+  color:var(--ink); display:flex; align-items:baseline; gap:.75em; flex-wrap:wrap; font-variant-numeric:tabular-nums}
+.formula b{color:var(--crude); font-weight:600; font-size:1.18em; line-height:1}
+.formula small{font-family:"Source Sans 3",sans-serif; font-size:1.3cqi; letter-spacing:.14em;
+  text-transform:uppercase; font-weight:700; color:var(--ink-faint)}
+
+/* ---------- numbered question cards ---------- */
+.qcards{display:grid; grid-template-columns:repeat(3,1fr); gap:2cqi; flex:1; align-content:center}
+.qcard{display:flex; flex-direction:column; gap:1cqi; padding-top:1.4cqi; border-top:2px solid var(--crude)}
+.qcard .n{font-family:"IBM Plex Mono",monospace; font-size:1.3cqi; color:var(--crude); font-weight:600; letter-spacing:.14em}
+.qcard h3{font-size:2.5cqi; line-height:1.15}
+.qcard p{margin:0; font-size:1.72cqi; line-height:1.4; color:var(--ink-soft)}
+
+/* ---------- controls ---------- */
+.panel{background:var(--surface-2); border-radius:2px; padding:1.6cqi 1.8cqi; display:flex; flex-direction:column; gap:1.2cqi}
+.ctrl{display:flex; flex-direction:column; gap:.55cqi}
+.ctrl label{font-size:1.2cqi; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--ink-faint)}
+.ctrl .val{font-family:"IBM Plex Mono",monospace; font-size:2.6cqi; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums}
+input[type=range]{
+  -webkit-appearance:none; appearance:none; width:100%; height:1.5cqi; background:transparent; cursor:pointer; margin:0;
+}
+input[type=range]::-webkit-slider-runnable-track{height:.45cqi; background:var(--rule); border-radius:1px}
+input[type=range]::-moz-range-track{height:.45cqi; background:var(--rule); border-radius:1px}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:1.9cqi; height:1.9cqi; border-radius:50%; background:var(--crude);
+  border:.35cqi solid var(--stage); box-shadow:0 0 0 1px var(--crude); margin-top:-.75cqi;
+}
+input[type=range]::-moz-range-thumb{
+  width:1.9cqi; height:1.9cqi; border-radius:50%; background:var(--crude); border:.35cqi solid var(--stage); box-shadow:0 0 0 1px var(--crude);
+}
+input[type=range]:focus-visible{outline:2px solid var(--brine); outline-offset:4px}
+.readout{display:grid; grid-template-columns:auto 1fr; gap:.45cqi 1.2cqi; font-size:1.75cqi; align-items:baseline}
+.readout dt{color:var(--ink-faint); font-size:1.5cqi; letter-spacing:.06em}
+.readout dd{margin:0; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-weight:500}
+.verdict{font-size:1.85cqi; line-height:1.36; padding:1.1cqi 1.3cqi; border-radius:2px; background:var(--surface); color:var(--ink)}
+.verdict strong{font-family:Spectral,Georgia,serif}
+.verdict[data-tone="gain"]{box-shadow:inset 0 0 0 1px var(--gain); color:var(--ink)}
+.verdict[data-tone="loss"]{box-shadow:inset 0 0 0 1px var(--loss)}
+.verdict[data-tone="flat"]{box-shadow:inset 0 0 0 1px var(--crude)}
+.btnrow{display:flex; gap:.8cqi; flex-wrap:wrap}
+button.b{
+  font-family:"Source Sans 3",sans-serif; font-size:1.45cqi; font-weight:600; letter-spacing:.02em;
+  padding:.7cqi 1.3cqi; border-radius:2px; border:1px solid var(--rule); background:var(--surface);
+  color:var(--ink); cursor:pointer;
+}
+button.b:hover{border-color:var(--crude); color:var(--crude)}
+button.b[aria-pressed="true"]{background:var(--crude); border-color:var(--crude); color:#fff}
+:root[data-theme="dark"] button.b[aria-pressed="true"], :root:not([data-theme="light"]) button.b[aria-pressed="true"]{color:#14221D}
+button.b:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+
+/* ---------- figure ---------- */
+.fig{flex:1; display:flex; flex-direction:column; gap:.7cqi; min-height:0}
+.fig svg{width:100%; height:100%; display:block; flex:1; min-height:0; overflow:visible}
+.figcap{font-size:1.35cqi; color:var(--ink-faint); line-height:1.35}
+.legend{display:flex; gap:1.6cqi; flex-wrap:wrap; font-size:1.4cqi; color:var(--ink-soft)}
+.legend span{display:flex; align-items:center; gap:.5em}
+.swatch{width:1.5em; height:.28em; border-radius:1px; display:inline-block}
+.swatch-hatch{height:.85em; border:1px solid var(--loss);
+  background:repeating-linear-gradient(45deg,var(--loss) 0 1px,transparent 1px 4px),var(--loss-fill)}
+.figpair{display:flex; gap:2cqi; flex:1; min-height:0}
+.figpair>svg{flex:1 1 0; width:auto; min-width:0}
+.col.narrow .panel{padding:1.3cqi 1.4cqi; gap:1cqi}
+.col.narrow .ctrl .val{font-size:2.3cqi}
+.col.narrow .readout{font-size:1.58cqi; gap:.32cqi 1cqi}
+.col.narrow .readout dt{font-size:1.32cqi}
+.col.narrow .verdict{font-size:1.6cqi; padding:.9cqi 1.1cqi; line-height:1.33}
+.slide[data-figs="pair"] .content{gap:2.2cqi}
+.slide[data-figs="pair"] .col.narrow{flex:0 0 25cqi}
+.slide[data-figs="pair"] .panel{padding:1.1cqi 1.2cqi; gap:.9cqi}
+.slide[data-figs="pair"] .ctrl .val{font-size:2.1cqi}
+.slide[data-figs="pair"] .ctrl label{font-size:1.05cqi}
+.slide[data-figs="pair"] .readout{font-size:1.5cqi; gap:.3cqi .8cqi}
+.slide[data-figs="pair"] .readout dt{font-size:1.28cqi}
+.slide[data-figs="pair"] .verdict{font-size:1.5cqi; padding:.85cqi 1cqi}
+.slide[data-figs="pair"] ul.body{font-size:1.62cqi; gap:.85cqi}
+.slide[data-figs="pair"] .def{padding:1.1cqi 1.2cqi}
+.slide[data-figs="pair"] .def dt{font-size:1.72cqi}
+.slide[data-figs="pair"] .def dd{font-size:1.46cqi}
+.slide[data-figs="pair"] button.b{font-size:1.25cqi; padding:.6cqi 1cqi}
+.slide[data-figs="pair"] .figcap{font-size:1.24cqi}
+
+/* ---------- data table ---------- */
+.tbl{width:100%; border-collapse:collapse; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:1.42cqi}
+.tbl th{
+  font-family:"Source Sans 3",sans-serif; font-size:1.18cqi; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-faint); font-weight:700; text-align:right; padding:.55cqi .6cqi; border-bottom:1px solid var(--rule);
+}
+.tbl th:first-child, .tbl td:first-child{text-align:left}
+.tbl td{padding:.5cqi .6cqi; border-bottom:1px solid var(--rule-soft); text-align:right; color:var(--ink-soft)}
+.tbl tr.hi td{background:var(--crude-soft); color:var(--ink); font-weight:600}
+.tbl tr.peak td:first-child::after{content:" \25C0"; color:var(--crude); font-size:.8em}
+.tbl input{
+  width:100%; font:inherit; text-align:right; background:var(--surface); color:var(--ink);
+  border:1px solid var(--rule); border-radius:2px; padding:.25cqi .4cqi;
+}
+.tbl input:focus-visible{outline:2px solid var(--brine); outline-offset:1px}
+.tbl input[data-state="ok"]{border-color:var(--gain); background:var(--gain-fill); color:var(--ink)}
+.tbl input[data-state="no"]{border-color:var(--loss); background:var(--loss-fill); color:var(--ink)}
+.given td{color:var(--ink)}
+
+/* ---------- market-structure spectrum ---------- */
+.spectrum{display:flex; flex-direction:column; gap:1cqi; flex:1; min-height:0}
+.spec-ends{display:flex; justify-content:space-between; font-size:1.12cqi; letter-spacing:.16em;
+  text-transform:uppercase; font-weight:700}
+.spec-ends .l{color:var(--brine)}
+.spec-ends .r{color:var(--loss)}
+.spec-axis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.6cqi;
+  position:relative; height:2.4cqi; align-items:center}
+.spec-axis::before{content:""; position:absolute; left:0; right:0; top:50%; height:.32cqi;
+  transform:translateY(-50%); border-radius:2px;
+  background:linear-gradient(90deg,var(--brine) 0%,var(--brine) 12%,var(--crude) 58%,var(--loss) 95%)}
+.spec-axis i{justify-self:center; position:relative; width:1.25cqi; height:1.25cqi; border-radius:50%;
+  background:var(--stage); border:.32cqi solid var(--ink-faint)}
+.spec-axis i[data-on]{border-color:var(--crude); box-shadow:0 0 0 .4cqi var(--crude-soft)}
+.spec-cols{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.6cqi; flex:1; min-height:0}
+.spec{display:flex; flex-direction:column; gap:.75cqi; min-width:0}
+.spec h3{font-size:1.95cqi; line-height:1.12; min-height:4.4cqi}
+.spec[data-here] h3{color:var(--crude)}
+.spec .tag{font-family:"IBM Plex Mono",monospace; font-size:1.05cqi; letter-spacing:.12em;
+  font-weight:600; color:var(--crude)}
+.spec svg{width:100%; height:8.6cqi; display:block}
+.spec dl{display:grid; grid-template-columns:auto 1fr; gap:.3cqi .8cqi; margin:0; font-size:1.4cqi; align-items:baseline}
+.spec dt{color:var(--ink-faint); font-size:1.18cqi; letter-spacing:.07em; text-transform:uppercase; font-weight:700}
+.spec dd{margin:0; color:var(--ink-soft); line-height:1.3}
+.spec[data-here] dd{color:var(--ink)}
+
+/* ---------- source table ---------- */
+.srctbl{width:100%; border-collapse:collapse; font-size:1.62cqi}
+.srctbl th{font-size:1.15cqi; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint);
+  font-weight:700; text-align:left; padding:.6cqi .8cqi; border-bottom:1px solid var(--rule)}
+.srctbl td{padding:.62cqi .8cqi; border-bottom:1px solid var(--rule-soft); vertical-align:baseline}
+.srctbl td:first-child{font-weight:600; color:var(--ink); white-space:nowrap}
+.srctbl td:last-child{color:var(--ink-soft)}
+.srctbl tr:last-child td{border-bottom:none}
+
+/* ---------- key-term list ---------- */
+.terms{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.9cqi 2.4cqi; flex:1; align-content:start}
+.term{display:flex; flex-direction:column; gap:.2cqi; padding-bottom:.8cqi; border-bottom:1px solid var(--rule-soft)}
+.term b{font-family:Spectral,Georgia,serif; font-size:1.72cqi; color:var(--ink)}
+.term span{font-size:1.48cqi; line-height:1.34; color:var(--ink-soft)}
+
+/* ---------- big stat ---------- */
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:2.4cqi}
+.stat{display:flex; flex-direction:column; gap:.3cqi}
+.stat b{font-family:"IBM Plex Mono",monospace; font-size:4.6cqi; font-weight:600; color:var(--crude); line-height:1}
+.stat span{font-size:1.52cqi; line-height:1.34; color:var(--ink-soft)}
+
+/* ---------- takeaways ---------- */
+.takes{display:flex; flex-direction:column; gap:1.5cqi; flex:1; justify-content:center}
+.take{display:grid; grid-template-columns:14cqi 1fr; gap:2cqi; align-items:baseline; padding-bottom:1.5cqi; border-bottom:1px solid var(--rule-soft)}
+.take:last-child{border-bottom:none; padding-bottom:0}
+.take h3{font-size:2.1cqi; color:var(--crude); line-height:1.15}
+.take p{margin:0; font-size:1.9cqi; line-height:1.42; color:var(--ink-soft)}
+.take p em{color:var(--ink); font-style:normal; font-weight:600}
+
+/* ---------- title slide ---------- */
+.titleslide{justify-content:center; gap:0}
+.titleslide .kicker{font-size:1.4cqi; letter-spacing:.24em; text-transform:uppercase; color:var(--ink-faint); font-weight:700}
+.titleslide h1{font-size:6.4cqi; line-height:1.03; letter-spacing:-.02em; margin:2.2cqi 0 1.6cqi; max-width:20ch}
+.titleslide .sub{font-size:2.1cqi; color:var(--ink-soft); max-width:52ch; line-height:1.45}
+.titleslide .meta{margin-top:3.4cqi; font-size:1.45cqi; color:var(--ink-faint); display:flex; gap:1.2em; flex-wrap:wrap}
+.titleslide .meta b{color:var(--crude); font-weight:600}
+.derrick{position:absolute; right:4cqi; bottom:0; width:34cqi; height:76cqi; opacity:.9; pointer-events:none}
+
+/* ---------- section divider ---------- */
+.divider{justify-content:center; background:var(--ink); color:var(--paper)}
+.divider .num{font-family:"IBM Plex Mono",monospace; font-size:1.4cqi; letter-spacing:.2em; color:var(--crude); font-weight:600}
+.divider h2{font-size:5.2cqi; line-height:1.06; margin:1.6cqi 0 1.4cqi; max-width:22ch; color:var(--paper)}
+.divider p{margin:0; font-size:2cqi; line-height:1.45; color:#A6B5B0; max-width:48ch}
+
+/* ---------- nav ---------- */
+.nav{
+  display:flex; align-items:center; gap:14px; padding:10px 4px 12px; max-width:1420px;
+  margin:0 auto; width:100%; font-size:13px; color:var(--ink-faint);
+}
+.rail{flex:1; display:flex; gap:3px; align-items:stretch; height:16px}
+.rail button{
+  flex:1; border:none; padding:0; background:transparent; cursor:pointer; position:relative; min-width:0;
+}
+.rail button::after{content:""; position:absolute; left:0; right:0; top:7px; height:2px; background:var(--rule); transition:background .15s, height .15s, top .15s}
+.rail button[aria-current="true"]::after{background:var(--crude); height:4px; top:6px}
+.rail button:hover::after{background:var(--brine)}
+.rail button:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.counter{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; letter-spacing:.04em; white-space:nowrap}
+.navbtn{
+  border:1px solid var(--rule); background:var(--surface); color:var(--ink); border-radius:2px;
+  width:30px; height:30px; cursor:pointer; font-size:15px; line-height:1; display:grid; place-items:center;
+}
+.navbtn:hover{border-color:var(--crude); color:var(--crude)}
+.navbtn:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.hint{white-space:nowrap}
+@media (max-width:760px){ .hint{display:none} }
+
+@media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important} }
+
+@media print{
+  @page{size:13.333in 7.5in; margin:0}
+  *{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important}
+  body{background:#fff; display:block}
+  .nav{display:none}
+  .shell{padding:0; display:block}
+  .stagewrap{display:block}
+  .stage{width:100%; max-width:none; max-height:none; height:auto; aspect-ratio:auto;
+    box-shadow:none; border:none; border-radius:0; overflow:visible; background:#fff}
+  .slide{display:flex !important; position:relative; inset:auto; width:100%; aspect-ratio:16/9;
+    overflow:hidden; background:var(--stage); break-after:page; page-break-after:always}
+  .slide:last-child{break-after:auto; page-break-after:auto}
+}
+</style>
+<style>
+.slide .tbl{font-size:1.6cqi}
+.slide .tbl th{font-size:1.2cqi}
+.slide .tbl td{padding:.7cqi .7cqi}
+.def .eq{display:block; margin-top:.4cqi}
+.titleslide .derrick{width:22cqi; height:50cqi; right:5cqi; bottom:6cqi; opacity:.85}
+.titleslide .sub{max-width:40ch}
+.qcards.qgrid4{grid-template-columns:repeat(2,1fr); gap:2.2cqi 3cqi}
+.qgrid4 .qcard h3{font-size:2.1cqi}
+.qcards.qgrid6{grid-template-columns:repeat(3,1fr); gap:2cqi 2.4cqi; align-content:start}
+.qgrid6 .qcard{gap:.7cqi; padding-top:1cqi}
+.qgrid6 .qcard h3{font-size:1.75cqi}
+.qgrid6 .qcard p{font-size:1.5cqi}
+select.sel{font-family:"Source Sans 3",sans-serif; font-size:1.5cqi; padding:.6cqi .8cqi; border:1px solid var(--rule);
+  border-radius:2px; background:var(--surface); color:var(--ink); width:100%}
+select.sel:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.col.narrow .readout dd{white-space:nowrap}
+.slide .tbl.words{font-family:"Source Sans 3",sans-serif; font-size:1.55cqi}
+.tbl.words th,.tbl.words td{text-align:left}
+.formula span sub{font-size:.62em}
+button.b.reveal{align-self:flex-start; margin-top:.4cqi}
+.qcard p.ans{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="stagewrap">
+    <div class="stage" id="stage">
+
+<section class="slide titleslide on" data-label="Title">
+  <span class="kicker">Principles of Microeconomics &#183; Chapter 10</span>
+  <h1>Externalities: When the Price Is Not Right</h1>
+  <p class="sub">When some costs or benefits of a trade fall on bystanders, the market quantity isn&rsquo;t the efficient one. How taxes, subsidies, bargaining and regulation can fix it.</p>
+  <div class="meta"><span><b>Examples:</b> antibiotics, vaccines, a carbon tax</span><span><b>Drag</b> the sliders on the live diagrams</span></div>
+  <svg class="derrick" viewBox="0 0 160 360" aria-hidden="true">
+    <path d="M20 340 L20 110 M20 340 L150 340" fill="none" stroke="var(--rule)" stroke-width="1.8"/>
+    <path d="M20 130 L140 320" fill="none" stroke="var(--ink-soft)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M20 320 L140 130" fill="none" stroke="var(--brine)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M20 270 L120 112" fill="none" stroke="var(--loss)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M64.2 200 L80 175 L80 225 Z" fill="var(--loss-fill)" stroke="var(--loss)" stroke-width="1.2"/>
+  </svg>
+</section>
+
+<section class="slide" data-label="Overview">
+  <div class="eyebrow"><span>Overview</span><span class="q">The big picture</span></div>
+  <h2 class="stitle">When the price sends the wrong signal</h2>
+  <p class="lede">If some of the costs or benefits of a trade fall on bystanders, the market quantity isn&rsquo;t the efficient one. External costs cause overproduction; external benefits cause underproduction.</p>
+  <div class="qcards">
+    <div class="qcard"><span class="n">PART 1</span><h3>The theory</h3><p>Externalities and efficiency, with the two key diagrams: negative and positive externalities.</p></div>
+    <div class="qcard"><span class="n">PART 2</span><h3>Private solutions</h3><p>The Coase theorem: when bargaining between the parties can fix the problem on its own.</p></div>
+    <div class="qcard"><span class="n">PART 3</span><h3>Government solutions</h3><p>Pigouvian taxes and subsidies, and command and control.</p></div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part I">
+  <span class="num">PART ONE</span>
+  <h2>Externalities and efficiency</h2>
+  <p>Costs and benefits that fall on people outside the trade.</p>
+</section>
+
+<section class="slide" data-label="Definitions">
+  <div class="eyebrow"><span>Externalities</span><span class="q">Definitions</span></div>
+  <h2 class="stitle">Private cost, social cost, and social surplus</h2>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Externality</dt><dd>An external cost or benefit that falls on bystanders, people other than the buyer or seller. A <strong>negative</strong> externality is an external cost; a <strong>positive</strong> externality is an external benefit.</dd></div>
+      <p class="formula"><b>Social cost</b><span>= private cost + external cost</span></p>
+    </div>
+    <div class="col">
+      <ul class="body">
+        <li><strong>Private cost</strong> is the cost paid by the consumer or producer. <strong>Social cost</strong> is the cost to everyone.</li>
+        <li><strong>Social surplus</strong> = consumer surplus + producer surplus + everyone else&rsquo;s surplus. The efficient quantity maximizes it. Who bears the cost doesn&rsquo;t change what that quantity is.</li>
+        <li>A market maximizes CS + PS. When there are externalities, that isn&rsquo;t the same as maximizing social surplus, so the market is inefficient.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Antibiotics">
+  <div class="eyebrow"><span>Externalities</span><span class="q">Motivating example</span></div>
+  <h2 class="stitle">Antibiotics</h2>
+  <div class="content">
+    <div class="col">
+      <ul class="body">
+        <li>Each use of an antibiotic breeds more resistant bacteria.</li>
+        <li>That is a cost borne by people who didn&rsquo;t take the antibiotic.</li>
+        <li>The price doesn&rsquo;t include that external cost, so the price is too low and antibiotics are overused.</li>
+      </ul>
+    </div>
+    <div class="col narrow">
+      <div class="def"><dt>Private or external?</dt><dd>The $50 you pay for a jacket is a private cost: you are the one who pays it. The resistant bacteria from your antibiotic are an external cost: other people bear it.</dd></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part II">
+  <span class="num">PART TWO</span>
+  <h2>Negative externalities</h2>
+  <p>External costs push the market to produce too much.</p>
+</section>
+
+<section class="slide" data-label="Negative externality">
+  <div class="eyebrow"><span>Negative externalities</span><span class="q">External costs</span></div>
+  <h2 class="stitle">The market produces more than the efficient quantity</h2>
+  <div class="content">
+    <div class="col">
+      <ul class="body">
+        <li>With an external cost, the true cost to society, the <strong>marginal social cost (MSC)</strong>, sits above the private supply curve, the <strong>marginal private cost (MPC)</strong>.</li>
+        <li>The gap between them is the external cost per unit.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <ul class="body">
+        <li>The market produces where demand meets MPC: <strong>Q<sub>mkt</sub></strong>.</li>
+        <li>The efficient quantity is where demand meets MSC: <strong>Q*</strong>.</li>
+        <li>Since Q<sub>mkt</sub> &gt; Q*, the good is <strong>overproduced</strong>. The triangle between MSC and demand, from Q* to Q<sub>mkt</sub>, is the deadweight loss.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: negative externality">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag the external cost</span></div>
+  <h2 class="stitle">Overproduction, and the Pigouvian tax that fixes it</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-neg" role="img" aria-label="Demand, marginal private cost and marginal social cost above it; the market quantity is larger than the efficient quantity, and the triangle between them is deadweight loss."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--ink-soft)"></i>D = MSB</span><span><i class="swatch" style="background:var(--brine)"></i>MPC (supply)</span><span><i class="swatch" style="background:var(--loss)"></i>MSC</span><span><i class="swatch swatch-hatch"></i>Deadweight loss</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-neg">External cost per unit</label>
+          <span class="val" id="s-neg-val">$8</span>
+          <input type="range" id="s-neg" min="0" max="14" step="1" value="8" aria-label="External cost per unit">
+        </div>
+        <div class="btnrow"><button class="b" id="b-tax" aria-pressed="false">Add Pigouvian tax</button></div>
+        <dl class="readout">
+          <dt>Market quantity</dt><dd id="r-nq">&mdash;</dd>
+          <dt>Efficient Q*</dt><dd id="r-nqs">&mdash;</dd>
+          <dt>Deadweight loss</dt><dd id="r-ndwl">&mdash;</dd>
+          <dt>Tax revenue</dt><dd id="r-nrev">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-neg" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Pigouvian tax">
+  <div class="eyebrow"><span>Negative externalities</span><span class="q">The fix</span></div>
+  <h2 class="stitle">The Pigouvian tax</h2>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Pigouvian tax</dt><dd>A tax on a good with external costs, set equal to the external cost, so the price reflects the true social cost.</dd></div>
+      <p class="figcap">Named for Arthur C. Pigou, who first showed how taxes could correct externalities.</p>
+    </div>
+    <div class="col">
+      <ul class="body">
+        <li>A tax on an ordinary good <strong>increases</strong> deadweight loss.</li>
+        <li>A tax on a good with an external cost <strong>reduces</strong> deadweight loss and raises revenue, because it pushes the market to Q*.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part III">
+  <span class="num">PART THREE</span>
+  <h2>Positive externalities</h2>
+  <p>External benefits leave the market producing too little.</p>
+</section>
+
+<section class="slide" data-label="Positive externality">
+  <div class="eyebrow"><span>Positive externalities</span><span class="q">External benefits</span></div>
+  <h2 class="stitle">The market produces less than the efficient quantity</h2>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>External benefit</dt><dd>A benefit received by people other than the buyers and sellers in the market.</dd></div>
+      <ul class="body" style="font-size:1.8cqi">
+        <li>The true benefit to society, the <strong>marginal social benefit (MSB)</strong>, sits above private demand (MPB).</li>
+        <li>The market stops at Q<sub>mkt</sub>, but Q* is larger. The good is <strong>underproduced</strong>.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="def"><dt>Vaccines (and COVID-19)</dt><dd>A flu shot protects you and makes you less likely to infect others. That second part is the external benefit, so left to the market, too few people get vaccinated. Economists estimated the external benefit of a COVID-19 vaccine course at $5,800 or more, while the vaccine cost only $20&ndash;$40. Governments subsidized production and made the vaccine free to consumers.</dd></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: positive externality">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag the external benefit</span></div>
+  <h2 class="stitle">Underproduction, and the subsidy that fixes it</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-pos" role="img" aria-label="Supply, private demand and marginal social benefit above it; the market quantity is smaller than the efficient quantity, and the triangle between them is deadweight loss."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--ink-soft)"></i>D = MPB</span><span><i class="swatch" style="background:var(--gain)"></i>MSB</span><span><i class="swatch" style="background:var(--brine)"></i>Supply</span><span><i class="swatch swatch-hatch"></i>Deadweight loss</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-pos">External benefit per unit</label>
+          <span class="val" id="s-pos-val">$8</span>
+          <input type="range" id="s-pos" min="0" max="14" step="1" value="8" aria-label="External benefit per unit">
+        </div>
+        <div class="btnrow"><button class="b" id="b-sub" aria-pressed="false">Add Pigouvian subsidy</button></div>
+        <dl class="readout">
+          <dt>Market quantity</dt><dd id="r-pq">&mdash;</dd>
+          <dt>Efficient Q*</dt><dd id="r-pqs">&mdash;</dd>
+          <dt>Deadweight loss</dt><dd id="r-pdwl">&mdash;</dd>
+          <dt>Subsidy cost</dt><dd id="r-pcost">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-pos" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part IV">
+  <span class="num">PART FOUR</span>
+  <h2>Private solutions: the Coase theorem</h2>
+  <p>When the people involved can bargain their way to the efficient outcome.</p>
+</section>
+
+<section class="slide" data-label="Coase theorem">
+  <div class="eyebrow"><span>Private solutions</span><span class="q">The Coase theorem</span></div>
+  <h2 class="stitle">Bargaining can fix an externality</h2>
+  <div class="content">
+    <div class="col">
+      <div class="defs">
+        <div class="def"><dt>Internalizing an externality</dt><dd>Adjusting incentives so decision-makers weigh all the costs and benefits of their actions, private and external.</dd></div>
+        <div class="def"><dt>Coase theorem</dt><dd>If transaction costs are low and property rights are clearly defined, private bargaining will reach the efficient outcome on its own, even with externalities.</dd></div>
+      </div>
+    </div>
+    <div class="col">
+      <ul class="body" style="font-size:1.8cqi">
+        <li><strong>Transaction costs</strong> are everything it takes to reach a deal: finding the parties, bargaining, writing the contract.</li>
+        <li><strong>The catch:</strong> for many externalities, such as air pollution over millions of people, transaction costs are high and property rights unclear, so private bargains alone won&rsquo;t solve every problem.</li>
+        <li>If we can define property rights and lower transaction costs, a new market in the externality can emerge.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: Coase bargaining">
+  <div class="eyebrow"><span>Live example</span><span class="q">A factory and its neighbors</span></div>
+  <h2 class="stitle">Will they bargain to the efficient outcome?</h2>
+  <div class="content">
+    <div class="col">
+      <p class="lede" style="font-size:1.75cqi">A factory&rsquo;s smoke does <strong>$1,000</strong> of harm to its neighbors. A filter would stop the smoke. Installing it is efficient whenever it costs less than $1,000.</p>
+      <div class="panel">
+        <div class="btnrow" role="group" aria-label="Who holds the property right">
+          <button class="b" data-right="res" aria-pressed="true">Neighbors have the right to clean air</button>
+          <button class="b" data-right="fac" aria-pressed="false">Factory has the right to pollute</button>
+        </div>
+        <div class="ctrl">
+          <label for="s-filt">Cost of the filter</label>
+          <span class="val" id="s-filt-val">$600</span>
+          <input type="range" id="s-filt" min="200" max="1600" step="100" value="600" aria-label="Cost of the filter">
+        </div>
+        <div class="ctrl">
+          <label for="s-tc">Transaction costs of reaching a deal</label>
+          <span class="val" id="s-tc-val">$100</span>
+          <input type="range" id="s-tc" min="0" max="800" step="50" value="100" aria-label="Transaction costs">
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <dl class="readout">
+        <dt>Efficient outcome</dt><dd id="r-eff">&mdash;</dd>
+        <dt>What happens</dt><dd id="r-out">&mdash;</dd>
+        <dt>Who pays</dt><dd id="r-who">&mdash;</dd>
+      </dl>
+      <div class="verdict" id="v-coase" data-tone="flat">&mdash;</div>
+      <p class="figcap">Dollar amounts are illustrative.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part V">
+  <span class="num">PART FIVE</span>
+  <h2>Government solutions</h2>
+  <p>Pigouvian taxes and subsidies, and command and control.</p>
+</section>
+
+<section class="slide" data-label="Command and control">
+  <div class="eyebrow"><span>Government solutions</span><span class="q">Command and control</span></div>
+  <h2 class="stitle">Command and control</h2>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Command and control</dt><dd>The government simply orders firms to make or use less.</dd></div>
+      <ul class="body" style="font-size:1.85cqi">
+        <li>Example: a 2007 rule required washing machines to use 21% less electricity.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="def"><dt>The drawback</dt><dd>Regulators often lack the information to pick the cheapest way to hit the goal. So command and control is inflexible and costly compared with a tax, which lets each firm decide how much to cut.</dd></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: cutting pollution">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Split the cut between two plants</span></div>
+  <h2 class="stitle">Why a tax costs less than command and control</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-cut" role="img" aria-label="Total cost of cutting 100 tons of pollution, depending on how the cut is split between a low-cost plant and a high-cost plant; command and control splits it evenly, while a tax leads the low-cost plant to do most of the cutting."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--brine)"></i>Total cost of cutting 100 tons</span><span><i class="swatch" style="background:var(--crude)"></i>Your split</span><span>Goal: cut 100 tons. Plant A cleans up more cheaply than Plant B (illustrative)</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-cut">Tons cut by Plant A</label>
+          <span class="val" id="s-cut-val">50</span>
+          <input type="range" id="s-cut" min="0" max="100" step="5" value="50" aria-label="Tons cut by plant A">
+        </div>
+        <div class="btnrow"><button class="b" data-cut="50">Command</button><button class="b" data-cut="75">Tax: $15 a ton</button></div>
+        <dl class="readout">
+          <dt>Plant A (low cost)</dt><dd id="r-ca">&mdash;</dd>
+          <dt>Plant B (high cost)</dt><dd id="r-cb">&mdash;</dd>
+          <dt>Total cost</dt><dd id="r-ct">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-cut" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Carbon tax">
+  <div class="eyebrow"><span>Application</span><span class="q">A carbon tax</span></div>
+  <h2 class="stitle">The economists&rsquo; carbon tax letter</h2>
+  <p class="lede">In 2019, thousands of economists signed an open letter calling a carbon tax the most cost-effective climate lever. They said it should:</p>
+  <div class="qcards qgrid4">
+    <div class="qcard"><span class="n">1</span><h3>Rise gradually each year</h3></div>
+    <div class="qcard"><span class="n">2</span><h3>Replace messier regulations</h3></div>
+    <div class="qcard"><span class="n">3</span><h3>Include a border adjustment to prevent &ldquo;leakage&rdquo;</h3></div>
+    <div class="qcard"><span class="n">4</span><h3>Return the revenue to citizens as equal lump-sum rebates</h3></div>
+  </div>
+</section>
+
+<section class="slide" data-label="Self-check">
+  <div class="eyebrow"><span>Quiz self-check</span><span class="q">Be able to answer</span></div>
+  <h2 class="stitle">Questions to answer without notes</h2>
+  <div class="qcards qgrid6">
+    <div class="qcard"><span class="n">QUESTION 1</span><h3>Is the $50 you pay for a jacket a private cost or an external cost?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>A <strong>private cost</strong>. You, the buyer, pay it.</p></div>
+    <div class="qcard"><span class="n">QUESTION 2</span><h3>What does a Pigouvian tax on a good with external costs do to deadweight loss?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>It <strong>reduces</strong> deadweight loss, by moving the market to Q*.</p></div>
+    <div class="qcard"><span class="n">QUESTION 3</span><h3>With external benefits, is market output too high or too low?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden><strong>Too low.</strong> The good is underproduced.</p></div>
+    <div class="qcard"><span class="n">QUESTION 4</span><h3>What does command and control do?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>It <strong>orders firms to produce (or use) less</strong>.</p></div>
+    <div class="qcard"><span class="n">QUESTION 5</span><h3>Why is command and control often costlier than a tax?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>Regulators often <strong>lack the information</strong> to pick the cheapest way to hit the goal. A tax lets each firm decide how much to cut.</p></div>
+    <div class="qcard"><span class="n">QUESTION 6</span><h3>When can private bargaining fix an externality?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>When <strong>transaction costs are low</strong> and <strong>property rights are clearly defined</strong> (the Coase theorem).</p></div>
+  </div>
+</section>
+
+<section class="slide" data-label="Takeaway">
+  <div class="eyebrow"><span>Takeaway</span></div>
+  <h2 class="stitle">Summary</h2>
+  <div class="takes">
+    <div class="take"><h3>Efficiency</h3><p>With externalities, the market quantity isn&rsquo;t the efficient quantity. External costs cause <em>overproduction</em>; external benefits cause <em>underproduction</em>.</p></div>
+    <div class="take"><h3>Prices</h3><p>Prices don&rsquo;t signal true costs and benefits, but Pigouvian taxes and subsidies can fix that. A tax on an external-cost good <em>reduces</em> deadweight loss.</p></div>
+    <div class="take"><h3>Regulation</h3><p>Command and control can work but is often costly and inflexible.</p></div>
+    <div class="take"><h3>Coase</h3><p>If property rights are clear and transaction costs low, <em>private bargaining</em> can fix externalities without government.</p></div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Key terms">
+  <div class="eyebrow"><span>Reference</span><span class="q">Key terms</span></div>
+  <h2 class="stitle">Key terms</h2>
+  <div class="terms">
+    <div class="term"><b>Externality</b><span>An external cost or benefit falling on bystanders.</span></div>
+    <div class="term"><b>Private vs. social cost</b><span>Social cost = private cost + external cost.</span></div>
+    <div class="term"><b>Social surplus</b><span>CS + PS + everyone else&rsquo;s surplus; maximized at the efficient quantity.</span></div>
+    <div class="term"><b>Negative externality</b><span>External cost: MSC above MPC, so the good is overproduced.</span></div>
+    <div class="term"><b>Positive externality</b><span>External benefit: MSB above MPB, so the good is underproduced.</span></div>
+    <div class="term"><b>Pigouvian tax / subsidy</b><span>Tax on external-cost goods, subsidy on external-benefit goods; both reduce deadweight loss.</span></div>
+    <div class="term"><b>Coase theorem</b><span>Low transaction costs + clear property rights: private bargaining is efficient.</span></div>
+    <div class="term"><b>Command and control</b><span>The government orders firms to make or use less. Often costlier than a tax.</span></div>
+  </div>
+</section>
+
+    </div>
+  </div>
+  <nav class="nav" aria-label="Slide navigation">
+    <button class="navbtn" id="prev" aria-label="Previous slide">&#8249;</button>
+    <button class="navbtn" id="next" aria-label="Next slide">&#8250;</button>
+    <div class="rail" id="rail" role="tablist" aria-label="Slides"></div>
+    <span class="counter" id="counter">1 / 1</span>
+    <span class="hint">&#8592; &#8594; to move &#183; drag any slider</span>
+  </nav>
+</div>
+
+<script>
+(function(){
+"use strict";
+var NS="http://www.w3.org/2000/svg";
+function E(n,a,t){var e=document.createElementNS(NS,n);for(var k in a){if(a[k]!==null&&a[k]!==undefined)e.setAttribute(k,a[k]);}if(t!==undefined)e.textContent=t;return e;}
+function C(n){return "var("+n+")";}
+function money(v,d){return "$"+Number(v).toFixed(d===undefined?2:d);}
+var MINUS="\u2212";
+function signed(v,d){return v<0?MINUS+money(-v,d):money(v,d);}
+
+function Frame(svg,o){
+  var W=o.W||440,H=o.H||300,L=(o.L===undefined?50:o.L),R=(o.R===undefined?16:o.R),T=(o.T===undefined?16:o.T),B=(o.B===undefined?40:o.B);
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  var x0=o.x0||0,x1=o.x1,y0=(o.y0===undefined?0:o.y0),y1=o.y1;
+  var f={svg:svg,W:W,H:H,x0:x0,x1:x1,y0:y0,y1:y1,
+    x:function(v){return L+(v-x0)/(x1-x0)*(W-L-R);},
+    y:function(v){return H-B-(v-y0)/(y1-y0)*(H-T-B);},
+    add:function(e){svg.appendChild(e);return e;}};
+  f.left=L; f.right=W-R; f.top=T; f.bottom=H-B;
+  f.add(E("path",{d:"M"+L+" "+T+" L"+L+" "+(H-B)+" L"+(W-R)+" "+(H-B),fill:"none",stroke:C("--rule"),"stroke-width":1.2}));
+  if(o.xlabel)f.add(E("text",{x:(L+W-R)/2,y:H-6,fill:C("--ink-faint"),"font-size":11,"text-anchor":"middle","font-family":"'Source Sans 3',sans-serif"},o.xlabel));
+  if(o.ylabel)f.add(E("text",{x:-(T+H-B)/2,y:13,fill:C("--ink-faint"),"font-size":11,"text-anchor":"middle",transform:"rotate(-90)","font-family":"'Source Sans 3',sans-serif"},o.ylabel));
+  return f;
+}
+function line(f,ax,ay,bx,by,stroke,w,dash){return f.add(E("line",{x1:f.x(ax),y1:f.y(ay),x2:f.x(bx),y2:f.y(by),stroke:stroke,"stroke-width":w||2,"stroke-dasharray":dash||null,"stroke-linecap":"round"}));}
+function curve(f,fn,a,b,stroke,w,dash){
+  var d="",i,q,v;
+  for(i=0;i<=140;i++){q=a+(b-a)*i/140; v=fn(q); if(!isFinite(v)||v>f.y1||v<f.y0){d="";continue;} d+=(d===""?"M":"L")+f.x(q).toFixed(2)+" "+f.y(v).toFixed(2);}
+  return f.add(E("path",{d:d,fill:"none",stroke:stroke,"stroke-width":w||2,"stroke-linejoin":"round","stroke-dasharray":dash||null}));
+}
+function lab(f,px,py,txt,fill,size,anchor){return f.add(E("text",{x:px,y:py,fill:fill,"font-size":size||11,"text-anchor":anchor||"start","font-weight":600,"font-family":"'IBM Plex Mono',monospace"},txt));}
+function cross(f,qx,py){
+  f.add(E("path",{d:"M"+f.x(qx)+" "+f.bottom+" L"+f.x(qx)+" "+f.y(py),stroke:C("--crude"),"stroke-width":1.1,"stroke-dasharray":"3 3",fill:"none"}));
+  f.add(E("path",{d:"M"+f.left+" "+f.y(py)+" L"+f.x(qx)+" "+f.y(py),stroke:C("--crude"),"stroke-width":1.1,"stroke-dasharray":"3 3",fill:"none"}));
+  f.add(E("circle",{cx:f.x(qx),cy:f.y(py),r:3.6,fill:C("--crude")}));
+}
+function xticks(f,v,fmt){v.forEach(function(t){
+  f.add(E("line",{x1:f.x(t),x2:f.x(t),y1:f.bottom,y2:f.bottom+4,stroke:C("--rule"),"stroke-width":1}));
+  f.add(E("text",{x:f.x(t),y:f.bottom+15,fill:C("--ink-faint"),"font-size":10,"text-anchor":"middle","font-family":"'IBM Plex Mono',monospace"},fmt?fmt(t):String(t)));});}
+function yticks(f,v,fmt){v.forEach(function(t){
+  f.add(E("line",{x1:f.left-4,x2:f.left,y1:f.y(t),y2:f.y(t),stroke:C("--rule"),"stroke-width":1}));
+  f.add(E("text",{x:f.left-7,y:f.y(t)+3.4,fill:C("--ink-faint"),"font-size":10,"text-anchor":"end","font-family":"'IBM Plex Mono',monospace"},fmt?fmt(t):String(t)));});}
+function hatchDefs(f){
+  var d=E("defs"),p=E("pattern",{id:"dwlhatch",width:6,height:6,patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"});
+  p.appendChild(E("rect",{width:6,height:6,fill:C("--loss-fill")}));
+  p.appendChild(E("line",{x1:0,y1:0,x2:0,y2:6,stroke:C("--loss"),"stroke-width":1.6,opacity:.75}));
+  d.appendChild(p); f.add(d);
+}
+function V(id,tone,html){var e=document.getElementById(id); if(!e)return; e.dataset.tone=tone; e.innerHTML=html;}
+
+
+function hatch(f){
+  var id="hatch-"+f.svg.id, d=E("defs"),p=E("pattern",{id:id,width:6,height:6,patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"});
+  p.appendChild(E("rect",{width:6,height:6,fill:C("--loss-fill")}));
+  p.appendChild(E("line",{x1:0,y1:0,x2:0,y2:6,stroke:C("--loss"),"stroke-width":1.6,opacity:.75}));
+  d.appendChild(p); f.add(d); return "url(#"+id+")";
+}
+function q1(v){return (Math.round(v*10)/10).toString();}
+function usd(v){return "$"+(Math.round(v*10)/10).toLocaleString(undefined,{maximumFractionDigits:1});}
+function sP(q){return 2+0.36*q;} function dP(q){return 38-0.36*q;}
+function mktF(svg){
+  var f=Frame(svg,{W:520,H:300,x1:106,y1:46,xlabel:"Quantity",ylabel:"Price ($)"});
+  yticks(f,[10,20,30,40],function(v){return "$"+v;}); xticks(f,[25,50,75,100]);
+  return f;
+}
+function vmark(f,q,txt,col,dy){
+  f.add(E("line",{x1:f.x(q),x2:f.x(q),y1:f.bottom,y2:f.bottom-6,stroke:col,"stroke-width":2}));
+  lab(f,f.x(q),f.bottom-10-(dy||0),txt,col,10.5,"middle");
+}
+function setPressed(el,on){el.setAttribute("aria-pressed",on?"true":"false");}
+
+/* ============ Live 1: negative externality ============ */
+var taxOn=false;
+function drawNeg(e){
+  var f=mktF(document.getElementById("fig-neg")), H=hatch(f);
+  var qs=(36-e)/0.72, ps=dP(qs), dwl=0.5*e*(50-qs);
+  if(e>0&&!taxOn)f.add(E("path",{d:"M"+f.x(qs)+" "+f.y(ps)+" L"+f.x(50)+" "+f.y(20+e)+" L"+f.x(50)+" "+f.y(20)+" Z",fill:H,stroke:C("--loss"),"stroke-width":1.1}));
+  if(e>0&&taxOn)f.add(E("rect",{x:f.x(0),y:f.y(ps),width:f.x(qs)-f.x(0),height:f.y(ps-e)-f.y(ps),fill:C("--gain-fill"),stroke:C("--gain"),"stroke-width":1}));
+  line(f,0,38,105.5,0,C("--ink-soft"),2.4); line(f,0,2,100,sP(100),C("--brine"),2.4);
+  if(e>0){var qe=Math.min(100,(44-2-e)/0.36); line(f,0,2+e,qe,sP(qe)+e,C("--loss"),2.4,taxOn?null:"6 4");
+    lab(f,f.x(qe)-4,f.y(sP(qe)+e)+2,taxOn?"MSC = MPC + tax":"MSC",C("--loss"),11.5,"end");}
+  lab(f,f.x(100),f.y(dP(100))-9,"D = MSB",C("--ink-soft"),11.5,"middle");
+  lab(f,f.x(97),f.y(sP(97))+16,"MPC",C("--brine"),11.5,"middle");
+  var qm=taxOn?qs:50, pm=taxOn?ps:20;
+  cross(f,qm,pm);
+  if(e>0){
+    f.add(E("circle",{cx:f.x(taxOn?50:qs),cy:f.y(taxOn?20:ps),r:3.8,fill:C("--stage"),stroke:C("--ink-soft"),"stroke-width":1.6}));
+    vmark(f,qs,"Q*",C("--gain"));
+    vmark(f,50,"Qmkt",taxOn?C("--ink-faint"):C("--crude"));
+    if(taxOn&&qs>18)lab(f,f.x(qs/2),f.y(ps-e/2)+4,"tax revenue",C("--gain"),10.5,"middle");
+  }
+  document.getElementById("r-nq").textContent=q1(qm);
+  document.getElementById("r-nqs").textContent=q1(qs);
+  document.getElementById("r-ndwl").textContent=usd(taxOn?0:dwl);
+  document.getElementById("r-nrev").textContent=taxOn?usd(e*qs):"—";
+  if(e===0)V("v-neg","flat","<strong>No external cost.</strong> MSC = MPC, so the market quantity of 50 is already efficient.");
+  else if(!taxOn)V("v-neg","loss","<strong>Overproduction.</strong> Producers ignore the $"+e+" cost each unit imposes on bystanders, so the market makes 50 units instead of "+q1(qs)+". The hatched triangle is a deadweight loss of "+usd(dwl)+".");
+  else V("v-neg","gain","<strong>Tax = external cost = $"+e+".</strong> Supply now reflects the full social cost, so the market moves to Q* = "+q1(qs)+". Deadweight loss disappears, and the tax raises "+usd(e*qs)+".");
+}
+
+/* ============ Live 2: positive externality ============ */
+var subOn=false;
+function drawPos(b){
+  var f=mktF(document.getElementById("fig-pos")), H=hatch(f);
+  var qs=(36+b)/0.72, sp=sP(qs), dwl=0.5*b*(qs-50);
+  if(b>0&&!subOn)f.add(E("path",{d:"M"+f.x(50)+" "+f.y(20)+" L"+f.x(50)+" "+f.y(20+b)+" L"+f.x(qs)+" "+f.y(sp)+" Z",fill:H,stroke:C("--loss"),"stroke-width":1.1}));
+  if(b>0&&subOn)f.add(E("rect",{x:f.x(0),y:f.y(sp),width:f.x(qs)-f.x(0),height:f.y(sp-b)-f.y(sp),fill:C("--crude-soft"),stroke:C("--crude"),"stroke-width":1}));
+  line(f,0,38,105.5,0,C("--ink-soft"),2.4); line(f,0,2,100,sP(100),C("--brine"),2.4);
+  if(b>0){var q0=Math.max(0,(38+b-46)/0.36); line(f,q0,dP(q0)+b,Math.min(106,(38+b)/0.36),Math.max(0,dP(Math.min(106,(38+b)/0.36))+b),C("--gain"),2.4,subOn?null:"6 4");
+    lab(f,f.x(q0)+6,f.y(dP(q0)+b)+14,subOn?"MSB = MPB + subsidy":"MSB",C("--gain"),11.5,"start");}
+  lab(f,f.x(100),f.y(dP(100))-9,"D = MPB",C("--ink-soft"),11.5,"middle");
+  lab(f,f.x(97),f.y(sP(97))+16,"S",C("--brine"),11.5,"middle");
+  var qm=subOn?qs:50, pm=subOn?sp:20;
+  cross(f,qm,pm);
+  if(b>0){
+    f.add(E("circle",{cx:f.x(subOn?50:qs),cy:f.y(subOn?20:sp),r:3.8,fill:C("--stage"),stroke:C("--ink-soft"),"stroke-width":1.6}));
+    vmark(f,qs,"Q*",C("--gain"));
+    vmark(f,50,"Qmkt",subOn?C("--ink-faint"):C("--crude"));
+    if(subOn&&qs>18)lab(f,f.x(qs/2),f.y(sp-b/2)+4,"subsidy cost",C("--crude"),10.5,"middle");
+  }
+  document.getElementById("r-pq").textContent=q1(qm);
+  document.getElementById("r-pqs").textContent=q1(qs);
+  document.getElementById("r-pdwl").textContent=usd(subOn?0:dwl);
+  document.getElementById("r-pcost").textContent=subOn?usd(b*qs):"—";
+  if(b===0)V("v-pos","flat","<strong>No external benefit.</strong> MSB = MPB, so the market quantity of 50 is already efficient.");
+  else if(!subOn)V("v-pos","loss","<strong>Underproduction.</strong> Buyers ignore the $"+b+" benefit each unit gives to others, so the market stops at 50 instead of "+q1(qs)+". The hatched triangle is a deadweight loss of "+usd(dwl)+".");
+  else V("v-pos","gain","<strong>Subsidy = external benefit = $"+b+".</strong> Demand now reflects the full social benefit, so market equilibrium = efficient equilibrium at "+q1(qs)+". Deadweight loss disappears. The subsidy costs "+usd(b*qs)+".");
+}
+
+/* ============ Live 3: Coase bargaining ============ */
+var rightTo="res";
+function coase(){
+  var F=+document.getElementById("s-filt").value, T=+document.getElementById("s-tc").value, H=1000;
+  document.getElementById("s-filt-val").textContent="$"+F.toLocaleString();
+  document.getElementById("s-tc-val").textContent="$"+T;
+  var effFilter=F<H, eff=effFilter?"Install the filter":"Keep polluting", out, who, ok, why;
+  if(rightTo==="res"){
+    if(effFilter){out="Filter installed";who="Factory pays $"+F.toLocaleString()+" for the filter";ok=true;why="The neighbors have the right to clean air, so the factory must stop the smoke. The filter ($"+F.toLocaleString()+") is cheaper than the harm, so no deal is needed.";}
+    else if(F-H>T){out="Factory pays neighbors";who="Factory pays neighbors $1,000+";ok=true;why="The filter costs more than the harm. The factory saves $"+(F-H).toLocaleString()+" by paying the neighbors at least $1,000 to accept the smoke, which is more than the $"+T+" cost of making the deal.";}
+    else {out="Filter installed";who="Factory pays $"+F.toLocaleString()+" for the filter";ok=false;why="Paying the neighbors would save the factory $"+(F-H).toLocaleString()+", but reaching a deal costs $"+T+". No deal, so the factory installs a filter that costs more than the harm it prevents.";}
+  } else {
+    if(!effFilter){out="Smoke continues";who="Neighbors bear the $1,000 harm";ok=true;why="The factory has the right to pollute, and the filter costs more than the harm. Keeping the smoke is efficient, so no deal is needed.";}
+    else if(H-F>T){out="Neighbors pay for the filter";who="Neighbors pay the factory $"+F.toLocaleString()+"+";ok=true;why="The neighbors would gain $"+(H-F).toLocaleString()+" by paying the factory at least $"+F.toLocaleString()+" to install the filter, more than the $"+T+" cost of making the deal.";}
+    else {out="Smoke continues";who="Neighbors bear the $1,000 harm";ok=false;why="A deal would gain $"+(H-F).toLocaleString()+", but reaching it costs $"+T+". No deal, so the smoke continues even though the filter is worth it.";}
+  }
+  document.getElementById("r-eff").textContent=eff;
+  document.getElementById("r-out").textContent=out;
+  document.getElementById("r-who").textContent=who;
+  V("v-coase",ok?"gain":"loss","<strong>"+(ok?"Efficient.":"Not efficient.")+"</strong> "+why+(ok?" Whichever side holds the right, the outcome is efficient. The right only decides who pays.":" High transaction costs block the bargain."));
+  Array.prototype.forEach.call(document.querySelectorAll("[data-right]"),function(b){setPressed(b,b.dataset.right===rightTo);});
+}
+
+/* ============ Live 4: cost of cutting 100 tons ============ */
+function costA(q){return 0.1*q*q;} function costB(q){return 0.3*q*q;}
+function drawCut(a){
+  var svg=document.getElementById("fig-cut"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,L:68,x1:100,y1:3300,xlabel:"Tons cut by Plant A (Plant B cuts the rest)",ylabel:"Total cost ($)"});
+  yticks(f,[1000,2000,3000],function(v){return "$"+v.toLocaleString();}); xticks(f,[0,25,50,75,100]);
+  curve(f,function(x){return costA(x)+costB(100-x);},0,100,C("--brine"),2.4);
+  f.add(E("circle",{cx:f.x(50),cy:f.y(1000),r:4,fill:C("--stage"),stroke:C("--loss"),"stroke-width":1.8}));
+  lab(f,f.x(50)-8,f.y(1000)-10,"command: $1,000",C("--loss"),10.5,"end");
+  f.add(E("circle",{cx:f.x(75),cy:f.y(750),r:4,fill:C("--stage"),stroke:C("--gain"),"stroke-width":1.8}));
+  lab(f,f.x(75),f.y(750)+20,"tax: $750 (cheapest)",C("--gain"),10.5,"middle");
+  var ca=costA(a), cb=costB(100-a), t=ca+cb;
+  cross(f,a,t);
+  document.getElementById("r-ca").textContent=a+" tons, $"+Math.round(ca).toLocaleString();
+  document.getElementById("r-cb").textContent=(100-a)+" tons, $"+Math.round(cb).toLocaleString();
+  document.getElementById("r-ct").textContent="$"+Math.round(t).toLocaleString();
+  var ma=0.2*a, mb=0.6*(100-a);
+  if(a===75)V("v-cut","gain","<strong>With a $15-per-ton tax: $750.</strong> Each plant cuts until its next ton would cost more than the $15 tax. Plant A ends up cutting 75 tons and Plant B 25, the cheapest split. The regulator doesn&rsquo;t need to know either plant&rsquo;s costs.");
+  else if(a===50)V("v-cut","loss","<strong>Command and control: $1,000.</strong> Each plant must cut 50 tons. Plant A could cut another ton for $"+ma.toFixed(0)+", while Plant B&rsquo;s next ton costs $"+mb.toFixed(0)+". Shifting cuts to Plant A would save money.");
+  else V("v-cut",t<=1000?"flat":"loss","<strong>Total cost $"+Math.round(t).toLocaleString()+".</strong> Plant A&rsquo;s next ton costs $"+ma.toFixed(0)+"; Plant B&rsquo;s costs $"+mb.toFixed(0)+". "+(ma<mb?"Shift more of the cut to Plant A to lower the total.":"Shift more of the cut to Plant B to lower the total."));
+}
+
+/* ---------------- wiring ---------------- */
+function on(id,fn){var e=document.getElementById(id); if(e)e.addEventListener("input",fn);}
+on("s-neg",function(e){var v=+e.target.value;document.getElementById("s-neg-val").textContent="$"+v;drawNeg(v);}); drawNeg(8);
+document.getElementById("b-tax").addEventListener("click",function(){taxOn=!taxOn;setPressed(this,taxOn);this.textContent=taxOn?"Remove tax":"Add Pigouvian tax";drawNeg(+document.getElementById("s-neg").value);});
+on("s-pos",function(e){var v=+e.target.value;document.getElementById("s-pos-val").textContent="$"+v;drawPos(v);}); drawPos(8);
+document.getElementById("b-sub").addEventListener("click",function(){subOn=!subOn;setPressed(this,subOn);this.textContent=subOn?"Remove subsidy":"Add Pigouvian subsidy";drawPos(+document.getElementById("s-pos").value);});
+on("s-filt",coase); on("s-tc",coase);
+Array.prototype.forEach.call(document.querySelectorAll("[data-right]"),function(b){b.addEventListener("click",function(){rightTo=b.dataset.right;coase();});});
+coase();
+function setCut(v){document.getElementById("s-cut").value=v;document.getElementById("s-cut-val").textContent=v;drawCut(v);}
+on("s-cut",function(e){setCut(+e.target.value);});
+Array.prototype.forEach.call(document.querySelectorAll("[data-cut]"),function(b){b.addEventListener("click",function(){setCut(+b.dataset.cut);});});
+setCut(50);
+Array.prototype.forEach.call(document.querySelectorAll("button.reveal"),function(btn){
+  btn.addEventListener("click",function(){
+    var ans=btn.nextElementSibling, open=ans.hidden;
+    ans.hidden=!open; btn.setAttribute("aria-expanded",open?"true":"false");
+    btn.textContent=open?"Hide answer":"Show answer";
+  });
+});
+Array.prototype.forEach.call(document.querySelectorAll('input[type=number], select, button.b'),function(el){
+  el.addEventListener("keydown",function(e){if(e.key===" "||e.key==="ArrowLeft"||e.key==="ArrowRight"||e.key==="Home"||e.key==="End")e.stopPropagation();});
+});
+
+var slides=Array.prototype.slice.call(document.querySelectorAll(".slide"));
+var rail=document.getElementById("rail"), counter=document.getElementById("counter"), cur=0;
+slides.forEach(function(s,i){
+  var b=document.createElement("button"); b.type="button"; b.setAttribute("role","tab");
+  b.setAttribute("aria-label","Slide "+(i+1)+": "+(s.dataset.label||"")); b.title=(i+1)+". "+(s.dataset.label||"");
+  b.addEventListener("click",function(){go(i);}); rail.appendChild(b);
+});
+function go(i){
+  cur=Math.max(0,Math.min(slides.length-1,i));
+  slides.forEach(function(s,j){s.classList.toggle("on",j===cur);});
+  Array.prototype.forEach.call(rail.children,function(b,j){b.setAttribute("aria-current",j===cur?"true":"false");});
+  counter.textContent=(cur+1)+" / "+slides.length;
+}
+document.getElementById("prev").addEventListener("click",function(){go(cur-1);});
+document.getElementById("next").addEventListener("click",function(){go(cur+1);});
+document.addEventListener("keydown",function(e){
+  var t=e.target.tagName;
+  if(t==="INPUT"&&e.target.type==="text")return;
+  if(t==="INPUT"&&e.target.type==="range"&&(e.key==="ArrowLeft"||e.key==="ArrowRight"))return;
+  if(e.key==="ArrowRight"||e.key==="PageDown"||e.key===" "){go(cur+1);e.preventDefault();}
+  else if(e.key==="ArrowLeft"||e.key==="PageUp"){go(cur-1);e.preventDefault();}
+  else if(e.key==="Home")go(0); else if(e.key==="End")go(slides.length-1);
+});
+go(0);
+})();
+</script>
+</body>
+</html>
