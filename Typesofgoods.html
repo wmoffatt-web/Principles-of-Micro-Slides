@@ -1,0 +1,1015 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Public Goods and the Commons</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ink:#16211E; --ink-soft:#44544F; --ink-faint:#7C8C87;
+  --paper:#F2F4F3; --surface:#FFFFFF; --surface-2:#E7EBE9;
+  --rule:#CBD4D1; --rule-soft:#DFE5E3;
+  --crude:#C47418; --crude-soft:#F0DCBE;
+  --brine:#3F7A72; --brine-soft:#D7E6E3;
+  --gain:#2E7D52; --gain-fill:rgba(46,125,82,.16);
+  --loss:#B5432F; --loss-fill:rgba(181,67,47,.16);
+  --stage:#FFFFFF; --shadow:0 1px 2px rgba(22,33,30,.06),0 10px 34px rgba(22,33,30,.10);
+}
+:root:not([data-theme="light"]) { color-scheme: light dark; }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#E7EDEA; --ink-soft:#A6B5B0; --ink-faint:#74857F;
+    --paper:#0E1A17; --surface:#16241F; --surface-2:#1E302A;
+    --rule:#2E443D; --rule-soft:#243730;
+    --crude:#E0A050; --crude-soft:#3B2E18;
+    --brine:#7FB8AF; --brine-soft:#1B312D;
+    --gain:#5FBE8A; --gain-fill:rgba(95,190,138,.18);
+    --loss:#E2836C; --loss-fill:rgba(226,131,108,.18);
+    --stage:#13201C; --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 40px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#E7EDEA; --ink-soft:#A6B5B0; --ink-faint:#74857F;
+  --paper:#0E1A17; --surface:#16241F; --surface-2:#1E302A;
+  --rule:#2E443D; --rule-soft:#243730;
+  --crude:#E0A050; --crude-soft:#3B2E18;
+  --brine:#7FB8AF; --brine-soft:#1B312D;
+  --gain:#5FBE8A; --gain-fill:rgba(95,190,138,.18);
+  --loss:#E2836C; --loss-fill:rgba(226,131,108,.18);
+  --stage:#13201C; --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 40px rgba(0,0,0,.45);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Source Sans 3",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  margin:0; min-height:100vh; display:flex; flex-direction:column;
+}
+h1,h2,h3{font-family:Spectral,Georgia,"Times New Roman",serif; font-weight:600; text-wrap:balance; margin:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+/* ---------- shell ---------- */
+.shell{flex:1; display:flex; flex-direction:column; min-height:0; padding:14px 16px 0}
+.stagewrap{flex:1; display:flex; align-items:center; justify-content:center; min-height:0}
+.stage{
+  container-type:inline-size;
+  width:100%; max-width:min(1420px, calc((100vh - 118px) * 16 / 9)); aspect-ratio:16/9;
+  background:var(--stage); border:1px solid var(--rule-soft); border-radius:3px;
+  box-shadow:var(--shadow); position:relative; overflow:hidden;
+}
+.slide{position:absolute; inset:0; padding:4.2cqi 5cqi 4.4cqi; display:none; flex-direction:column; gap:2.2cqi}
+.slide.on{display:flex}
+.slide[data-pad="tight"]{padding:3.2cqi 4cqi 3.4cqi; gap:1.6cqi}
+
+/* ---------- slide furniture ---------- */
+.eyebrow{
+  font-size:1.18cqi; letter-spacing:.17em; text-transform:uppercase; font-weight:700;
+  color:var(--crude); display:flex; gap:.9em; align-items:baseline;
+}
+.eyebrow .q{color:var(--ink-faint); letter-spacing:.17em}
+.stitle{font-size:4.1cqi; line-height:1.08; letter-spacing:-.01em}
+.slide[data-pad="tight"] .stitle{font-size:3.3cqi}
+.lede{font-size:2.05cqi; line-height:1.45; color:var(--ink-soft); max-width:46ch}
+.body{display:flex; flex-direction:column; gap:1.1cqi; font-size:1.95cqi; line-height:1.42}
+.body li{margin:0}
+ul.body{list-style:none; padding:0}
+ul.body li{position:relative; padding-left:1.5em}
+ul.body li::before{content:""; position:absolute; left:.2em; top:.62em; width:.5em; height:.5em; background:var(--crude); border-radius:50%}
+ul.body li ul{list-style:none; padding:.5em 0 0 0; display:flex; flex-direction:column; gap:.45em; font-size:.88em; color:var(--ink-soft)}
+ul.body li ul li::before{width:.42em; height:.42em; background:none; border:1px solid var(--brine); top:.55em}
+.content{flex:1; display:flex; gap:3cqi; min-height:0}
+.col{flex:1; display:flex; flex-direction:column; gap:1.6cqi; min-width:0}
+.col.narrow{flex:0 0 32cqi}
+.col.wide{flex:1.5}
+
+/* ---------- definition cards ---------- */
+.defs{display:flex; flex-direction:column; gap:1.3cqi}
+.defgrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.3cqi}
+.def{background:var(--surface-2); border-radius:2px; padding:1.5cqi 1.8cqi; display:flex; flex-direction:column; gap:.5cqi}
+.def dt{font-family:Spectral,Georgia,serif; font-weight:700; font-size:2cqi; color:var(--ink)}
+.def dd{margin:0; font-size:1.72cqi; line-height:1.38; color:var(--ink-soft)}
+.def .eq{font-family:"IBM Plex Mono",monospace; font-size:1.6cqi; color:var(--crude); font-weight:500; letter-spacing:.02em}
+
+.formula{margin:0; font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:2.9cqi; font-weight:500;
+  color:var(--ink); display:flex; align-items:baseline; gap:.75em; flex-wrap:wrap; font-variant-numeric:tabular-nums}
+.formula b{color:var(--crude); font-weight:600; font-size:1.18em; line-height:1}
+.formula small{font-family:"Source Sans 3",sans-serif; font-size:1.3cqi; letter-spacing:.14em;
+  text-transform:uppercase; font-weight:700; color:var(--ink-faint)}
+
+/* ---------- numbered question cards ---------- */
+.qcards{display:grid; grid-template-columns:repeat(3,1fr); gap:2cqi; flex:1; align-content:center}
+.qcard{display:flex; flex-direction:column; gap:1cqi; padding-top:1.4cqi; border-top:2px solid var(--crude)}
+.qcard .n{font-family:"IBM Plex Mono",monospace; font-size:1.3cqi; color:var(--crude); font-weight:600; letter-spacing:.14em}
+.qcard h3{font-size:2.5cqi; line-height:1.15}
+.qcard p{margin:0; font-size:1.72cqi; line-height:1.4; color:var(--ink-soft)}
+
+/* ---------- controls ---------- */
+.panel{background:var(--surface-2); border-radius:2px; padding:1.6cqi 1.8cqi; display:flex; flex-direction:column; gap:1.2cqi}
+.ctrl{display:flex; flex-direction:column; gap:.55cqi}
+.ctrl label{font-size:1.2cqi; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--ink-faint)}
+.ctrl .val{font-family:"IBM Plex Mono",monospace; font-size:2.6cqi; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums}
+input[type=range]{
+  -webkit-appearance:none; appearance:none; width:100%; height:1.5cqi; background:transparent; cursor:pointer; margin:0;
+}
+input[type=range]::-webkit-slider-runnable-track{height:.45cqi; background:var(--rule); border-radius:1px}
+input[type=range]::-moz-range-track{height:.45cqi; background:var(--rule); border-radius:1px}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:1.9cqi; height:1.9cqi; border-radius:50%; background:var(--crude);
+  border:.35cqi solid var(--stage); box-shadow:0 0 0 1px var(--crude); margin-top:-.75cqi;
+}
+input[type=range]::-moz-range-thumb{
+  width:1.9cqi; height:1.9cqi; border-radius:50%; background:var(--crude); border:.35cqi solid var(--stage); box-shadow:0 0 0 1px var(--crude);
+}
+input[type=range]:focus-visible{outline:2px solid var(--brine); outline-offset:4px}
+.readout{display:grid; grid-template-columns:auto 1fr; gap:.45cqi 1.2cqi; font-size:1.75cqi; align-items:baseline}
+.readout dt{color:var(--ink-faint); font-size:1.5cqi; letter-spacing:.06em}
+.readout dd{margin:0; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-weight:500}
+.verdict{font-size:1.85cqi; line-height:1.36; padding:1.1cqi 1.3cqi; border-radius:2px; background:var(--surface); color:var(--ink)}
+.verdict strong{font-family:Spectral,Georgia,serif}
+.verdict[data-tone="gain"]{box-shadow:inset 0 0 0 1px var(--gain); color:var(--ink)}
+.verdict[data-tone="loss"]{box-shadow:inset 0 0 0 1px var(--loss)}
+.verdict[data-tone="flat"]{box-shadow:inset 0 0 0 1px var(--crude)}
+.btnrow{display:flex; gap:.8cqi; flex-wrap:wrap}
+button.b{
+  font-family:"Source Sans 3",sans-serif; font-size:1.45cqi; font-weight:600; letter-spacing:.02em;
+  padding:.7cqi 1.3cqi; border-radius:2px; border:1px solid var(--rule); background:var(--surface);
+  color:var(--ink); cursor:pointer;
+}
+button.b:hover{border-color:var(--crude); color:var(--crude)}
+button.b[aria-pressed="true"]{background:var(--crude); border-color:var(--crude); color:#fff}
+:root[data-theme="dark"] button.b[aria-pressed="true"], :root:not([data-theme="light"]) button.b[aria-pressed="true"]{color:#14221D}
+button.b:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+
+/* ---------- figure ---------- */
+.fig{flex:1; display:flex; flex-direction:column; gap:.7cqi; min-height:0}
+.fig svg{width:100%; height:100%; display:block; flex:1; min-height:0; overflow:visible}
+.figcap{font-size:1.35cqi; color:var(--ink-faint); line-height:1.35}
+.legend{display:flex; gap:1.6cqi; flex-wrap:wrap; font-size:1.4cqi; color:var(--ink-soft)}
+.legend span{display:flex; align-items:center; gap:.5em}
+.swatch{width:1.5em; height:.28em; border-radius:1px; display:inline-block}
+.swatch-hatch{height:.85em; border:1px solid var(--loss);
+  background:repeating-linear-gradient(45deg,var(--loss) 0 1px,transparent 1px 4px),var(--loss-fill)}
+.figpair{display:flex; gap:2cqi; flex:1; min-height:0}
+.figpair>svg{flex:1 1 0; width:auto; min-width:0}
+.col.narrow .panel{padding:1.3cqi 1.4cqi; gap:1cqi}
+.col.narrow .ctrl .val{font-size:2.3cqi}
+.col.narrow .readout{font-size:1.58cqi; gap:.32cqi 1cqi}
+.col.narrow .readout dt{font-size:1.32cqi}
+.col.narrow .verdict{font-size:1.6cqi; padding:.9cqi 1.1cqi; line-height:1.33}
+.slide[data-figs="pair"] .content{gap:2.2cqi}
+.slide[data-figs="pair"] .col.narrow{flex:0 0 25cqi}
+.slide[data-figs="pair"] .panel{padding:1.1cqi 1.2cqi; gap:.9cqi}
+.slide[data-figs="pair"] .ctrl .val{font-size:2.1cqi}
+.slide[data-figs="pair"] .ctrl label{font-size:1.05cqi}
+.slide[data-figs="pair"] .readout{font-size:1.5cqi; gap:.3cqi .8cqi}
+.slide[data-figs="pair"] .readout dt{font-size:1.28cqi}
+.slide[data-figs="pair"] .verdict{font-size:1.5cqi; padding:.85cqi 1cqi}
+.slide[data-figs="pair"] ul.body{font-size:1.62cqi; gap:.85cqi}
+.slide[data-figs="pair"] .def{padding:1.1cqi 1.2cqi}
+.slide[data-figs="pair"] .def dt{font-size:1.72cqi}
+.slide[data-figs="pair"] .def dd{font-size:1.46cqi}
+.slide[data-figs="pair"] button.b{font-size:1.25cqi; padding:.6cqi 1cqi}
+.slide[data-figs="pair"] .figcap{font-size:1.24cqi}
+
+/* ---------- data table ---------- */
+.tbl{width:100%; border-collapse:collapse; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:1.42cqi}
+.tbl th{
+  font-family:"Source Sans 3",sans-serif; font-size:1.18cqi; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-faint); font-weight:700; text-align:right; padding:.55cqi .6cqi; border-bottom:1px solid var(--rule);
+}
+.tbl th:first-child, .tbl td:first-child{text-align:left}
+.tbl td{padding:.5cqi .6cqi; border-bottom:1px solid var(--rule-soft); text-align:right; color:var(--ink-soft)}
+.tbl tr.hi td{background:var(--crude-soft); color:var(--ink); font-weight:600}
+.tbl tr.peak td:first-child::after{content:" \25C0"; color:var(--crude); font-size:.8em}
+.tbl input{
+  width:100%; font:inherit; text-align:right; background:var(--surface); color:var(--ink);
+  border:1px solid var(--rule); border-radius:2px; padding:.25cqi .4cqi;
+}
+.tbl input:focus-visible{outline:2px solid var(--brine); outline-offset:1px}
+.tbl input[data-state="ok"]{border-color:var(--gain); background:var(--gain-fill); color:var(--ink)}
+.tbl input[data-state="no"]{border-color:var(--loss); background:var(--loss-fill); color:var(--ink)}
+.given td{color:var(--ink)}
+
+/* ---------- market-structure spectrum ---------- */
+.spectrum{display:flex; flex-direction:column; gap:1cqi; flex:1; min-height:0}
+.spec-ends{display:flex; justify-content:space-between; font-size:1.12cqi; letter-spacing:.16em;
+  text-transform:uppercase; font-weight:700}
+.spec-ends .l{color:var(--brine)}
+.spec-ends .r{color:var(--loss)}
+.spec-axis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.6cqi;
+  position:relative; height:2.4cqi; align-items:center}
+.spec-axis::before{content:""; position:absolute; left:0; right:0; top:50%; height:.32cqi;
+  transform:translateY(-50%); border-radius:2px;
+  background:linear-gradient(90deg,var(--brine) 0%,var(--brine) 12%,var(--crude) 58%,var(--loss) 95%)}
+.spec-axis i{justify-self:center; position:relative; width:1.25cqi; height:1.25cqi; border-radius:50%;
+  background:var(--stage); border:.32cqi solid var(--ink-faint)}
+.spec-axis i[data-on]{border-color:var(--crude); box-shadow:0 0 0 .4cqi var(--crude-soft)}
+.spec-cols{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1.6cqi; flex:1; min-height:0}
+.spec{display:flex; flex-direction:column; gap:.75cqi; min-width:0}
+.spec h3{font-size:1.95cqi; line-height:1.12; min-height:4.4cqi}
+.spec[data-here] h3{color:var(--crude)}
+.spec .tag{font-family:"IBM Plex Mono",monospace; font-size:1.05cqi; letter-spacing:.12em;
+  font-weight:600; color:var(--crude)}
+.spec svg{width:100%; height:8.6cqi; display:block}
+.spec dl{display:grid; grid-template-columns:auto 1fr; gap:.3cqi .8cqi; margin:0; font-size:1.4cqi; align-items:baseline}
+.spec dt{color:var(--ink-faint); font-size:1.18cqi; letter-spacing:.07em; text-transform:uppercase; font-weight:700}
+.spec dd{margin:0; color:var(--ink-soft); line-height:1.3}
+.spec[data-here] dd{color:var(--ink)}
+
+/* ---------- source table ---------- */
+.srctbl{width:100%; border-collapse:collapse; font-size:1.62cqi}
+.srctbl th{font-size:1.15cqi; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint);
+  font-weight:700; text-align:left; padding:.6cqi .8cqi; border-bottom:1px solid var(--rule)}
+.srctbl td{padding:.62cqi .8cqi; border-bottom:1px solid var(--rule-soft); vertical-align:baseline}
+.srctbl td:first-child{font-weight:600; color:var(--ink); white-space:nowrap}
+.srctbl td:last-child{color:var(--ink-soft)}
+.srctbl tr:last-child td{border-bottom:none}
+
+/* ---------- key-term list ---------- */
+.terms{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.9cqi 2.4cqi; flex:1; align-content:start}
+.term{display:flex; flex-direction:column; gap:.2cqi; padding-bottom:.8cqi; border-bottom:1px solid var(--rule-soft)}
+.term b{font-family:Spectral,Georgia,serif; font-size:1.72cqi; color:var(--ink)}
+.term span{font-size:1.48cqi; line-height:1.34; color:var(--ink-soft)}
+
+/* ---------- big stat ---------- */
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:2.4cqi}
+.stat{display:flex; flex-direction:column; gap:.3cqi}
+.stat b{font-family:"IBM Plex Mono",monospace; font-size:4.6cqi; font-weight:600; color:var(--crude); line-height:1}
+.stat span{font-size:1.52cqi; line-height:1.34; color:var(--ink-soft)}
+
+/* ---------- takeaways ---------- */
+.takes{display:flex; flex-direction:column; gap:1.5cqi; flex:1; justify-content:center}
+.take{display:grid; grid-template-columns:14cqi 1fr; gap:2cqi; align-items:baseline; padding-bottom:1.5cqi; border-bottom:1px solid var(--rule-soft)}
+.take:last-child{border-bottom:none; padding-bottom:0}
+.take h3{font-size:2.1cqi; color:var(--crude); line-height:1.15}
+.take p{margin:0; font-size:1.9cqi; line-height:1.42; color:var(--ink-soft)}
+.take p em{color:var(--ink); font-style:normal; font-weight:600}
+
+/* ---------- title slide ---------- */
+.titleslide{justify-content:center; gap:0}
+.titleslide .kicker{font-size:1.4cqi; letter-spacing:.24em; text-transform:uppercase; color:var(--ink-faint); font-weight:700}
+.titleslide h1{font-size:6.4cqi; line-height:1.03; letter-spacing:-.02em; margin:2.2cqi 0 1.6cqi; max-width:20ch}
+.titleslide .sub{font-size:2.1cqi; color:var(--ink-soft); max-width:52ch; line-height:1.45}
+.titleslide .meta{margin-top:3.4cqi; font-size:1.45cqi; color:var(--ink-faint); display:flex; gap:1.2em; flex-wrap:wrap}
+.titleslide .meta b{color:var(--crude); font-weight:600}
+.derrick{position:absolute; right:4cqi; bottom:0; width:34cqi; height:76cqi; opacity:.9; pointer-events:none}
+
+/* ---------- section divider ---------- */
+.divider{justify-content:center; background:var(--ink); color:var(--paper)}
+.divider .num{font-family:"IBM Plex Mono",monospace; font-size:1.4cqi; letter-spacing:.2em; color:var(--crude); font-weight:600}
+.divider h2{font-size:5.2cqi; line-height:1.06; margin:1.6cqi 0 1.4cqi; max-width:22ch; color:var(--paper)}
+.divider p{margin:0; font-size:2cqi; line-height:1.45; color:#A6B5B0; max-width:48ch}
+
+/* ---------- nav ---------- */
+.nav{
+  display:flex; align-items:center; gap:14px; padding:10px 4px 12px; max-width:1420px;
+  margin:0 auto; width:100%; font-size:13px; color:var(--ink-faint);
+}
+.rail{flex:1; display:flex; gap:3px; align-items:stretch; height:16px}
+.rail button{
+  flex:1; border:none; padding:0; background:transparent; cursor:pointer; position:relative; min-width:0;
+}
+.rail button::after{content:""; position:absolute; left:0; right:0; top:7px; height:2px; background:var(--rule); transition:background .15s, height .15s, top .15s}
+.rail button[aria-current="true"]::after{background:var(--crude); height:4px; top:6px}
+.rail button:hover::after{background:var(--brine)}
+.rail button:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.counter{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; letter-spacing:.04em; white-space:nowrap}
+.navbtn{
+  border:1px solid var(--rule); background:var(--surface); color:var(--ink); border-radius:2px;
+  width:30px; height:30px; cursor:pointer; font-size:15px; line-height:1; display:grid; place-items:center;
+}
+.navbtn:hover{border-color:var(--crude); color:var(--crude)}
+.navbtn:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.hint{white-space:nowrap}
+@media (max-width:760px){ .hint{display:none} }
+
+@media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important} }
+
+@media print{
+  @page{size:13.333in 7.5in; margin:0}
+  *{-webkit-print-color-adjust:exact !important; print-color-adjust:exact !important}
+  body{background:#fff; display:block}
+  .nav{display:none}
+  .shell{padding:0; display:block}
+  .stagewrap{display:block}
+  .stage{width:100%; max-width:none; max-height:none; height:auto; aspect-ratio:auto;
+    box-shadow:none; border:none; border-radius:0; overflow:visible; background:#fff}
+  .slide{display:flex !important; position:relative; inset:auto; width:100%; aspect-ratio:16/9;
+    overflow:hidden; background:var(--stage); break-after:page; page-break-after:always}
+  .slide:last-child{break-after:auto; page-break-after:auto}
+}
+</style>
+<style>
+.slide .tbl{font-size:1.6cqi}
+.slide .tbl th{font-size:1.2cqi}
+.slide .tbl td{padding:.7cqi .7cqi}
+.def .eq{display:block; margin-top:.4cqi}
+.titleslide .derrick{width:22cqi; height:50cqi; right:5cqi; bottom:6cqi; opacity:.85}
+.titleslide .sub{max-width:40ch}
+.qcards.qgrid4{grid-template-columns:repeat(2,1fr); gap:2.2cqi 3cqi}
+.qgrid4 .qcard h3{font-size:2.1cqi}
+.qcards.qgrid6{grid-template-columns:repeat(3,1fr); gap:2cqi 2.4cqi; align-content:start}
+.qgrid6 .qcard{gap:.7cqi; padding-top:1cqi}
+.qgrid6 .qcard h3{font-size:1.75cqi}
+.qgrid6 .qcard p{font-size:1.5cqi}
+select.sel{font-family:"Source Sans 3",sans-serif; font-size:1.5cqi; padding:.6cqi .8cqi; border:1px solid var(--rule);
+  border-radius:2px; background:var(--surface); color:var(--ink); width:100%}
+select.sel:focus-visible{outline:2px solid var(--brine); outline-offset:2px}
+.col.narrow .readout dd{white-space:nowrap}
+.slide .tbl.words{font-family:"Source Sans 3",sans-serif; font-size:1.55cqi}
+.tbl.words th,.tbl.words td{text-align:left}
+.formula span sub{font-size:.62em}
+.grid4{display:grid; grid-template-columns:auto 1fr 1fr; gap:1.2cqi; flex:1; min-height:0; align-content:stretch}
+.grid4 .ghead{font-size:1.25cqi; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--ink-faint); text-align:center; align-self:end}
+.grid4 .gside{font-size:1.25cqi; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--ink-faint); writing-mode:vertical-rl; transform:rotate(180deg); text-align:center; align-self:center}
+.grid4 .gcell{border-radius:3px; padding:1.8cqi 2cqi; display:flex; flex-direction:column; gap:.8cqi; justify-content:center; border:1.5px solid var(--rule); transition:opacity .15s, box-shadow .15s}
+.grid4 .gcell b{font-family:Spectral,Georgia,serif; font-size:2.4cqi; font-weight:600; color:var(--ink)}
+.grid4 .gcell span{font-size:1.75cqi; color:var(--ink-soft); line-height:1.4}
+.grid4.small .gcell b{font-size:2.1cqi}
+.g-priv{background:var(--surface-2)} .g-comm{background:var(--crude-soft); border-color:var(--crude)!important}
+.g-club{background:var(--brine-soft); border-color:var(--brine)!important} .g-pub{background:var(--gain-fill); border-color:var(--gain)!important}
+.grid4 .gcell.off{opacity:.35}
+.grid4 .gcell.on{box-shadow:0 0 0 3px var(--ink); opacity:1}
+button.b.reveal{align-self:flex-start; margin-top:.4cqi}
+.qcard p.ans{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="stagewrap">
+    <div class="stage" id="stage">
+
+<section class="slide titleslide on" data-label="Title">
+  <span class="kicker">Principles of Microeconomics &#183; Chapter 19</span>
+  <h1>Public Goods and the Tragedy of the Commons</h1>
+  <p class="sub">Two questions, excludable and rival, sort every good into four types and tell you when markets work and when they fail.</p>
+  <div class="meta"><span><b>Examples:</b> fireworks, streaming music, ocean tuna, New Zealand&rsquo;s fisheries</span><span><b>Drag</b> the sliders on the live diagrams</span></div>
+  <svg class="derrick" viewBox="0 0 160 360" aria-hidden="true">
+    <rect x="20" y="130" width="58" height="95" fill="var(--surface-2)" stroke="var(--rule)" stroke-width="1.6"/>
+    <rect x="82" y="130" width="58" height="95" fill="var(--crude-soft)" stroke="var(--crude)" stroke-width="1.6"/>
+    <rect x="20" y="229" width="58" height="95" fill="var(--brine-soft)" stroke="var(--brine)" stroke-width="1.6"/>
+    <rect x="82" y="229" width="58" height="95" fill="var(--gain-fill)" stroke="var(--gain)" stroke-width="1.6"/>
+  </svg>
+</section>
+
+<section class="slide" data-label="Overview">
+  <div class="eyebrow"><span>Overview</span><span class="q">The big picture</span></div>
+  <h2 class="stitle">When markets work, and when they fail</h2>
+  <p class="lede">Markets provide food, clothing and phones very well. But they underprovide some goods, like asteroid deflection and national defense, and overuse others, like ocean tuna.</p>
+  <div class="qcards">
+    <div class="qcard"><span class="n">PART 1</span><h3>Two questions</h3><p>Is the good excludable? Is it rival? The answers sort every good into four types.</p></div>
+    <div class="qcard"><span class="n">PART 2</span><h3>Public and club goods</h3><p>Free riders, forced riders, and why markets underprovide or misprice nonrival goods.</p></div>
+    <div class="qcard"><span class="n">PART 3</span><h3>The commons</h3><p>Why unowned resources get overused, and the fixes that work: norms and property rights.</p></div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part I">
+  <span class="num">PART ONE</span>
+  <h2>Two questions that define a good</h2>
+  <p>Can non-payers be kept out? Does one person&rsquo;s use reduce another&rsquo;s?</p>
+</section>
+
+<section class="slide" data-label="Excludable and rival">
+  <div class="eyebrow"><span>Defining goods</span><span class="q">Two properties</span></div>
+  <h2 class="stitle">Excludable and rival</h2>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Excludable</dt><dd>Non-payers can be kept from using the good. <strong>Nonexcludable</strong> means they can&rsquo;t easily be prevented from using it.</dd></div>
+    </div>
+    <div class="col">
+      <div class="def"><dt>Rival</dt><dd>One person&rsquo;s use reduces someone else&rsquo;s ability to use it. <strong>Nonrival</strong> means many people can use the same unit at once.</dd></div>
+      <p class="figcap">Example of nonrival: asteroid deflection protects 7 billion people for the same cost as protecting 1 million.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Four types">
+  <div class="eyebrow"><span>Defining goods</span><span class="q">Table 19-1</span></div>
+  <h2 class="stitle">The four types of goods</h2>
+  <div class="grid4">
+    <div></div><div class="ghead">Excludable</div><div class="ghead">Nonexcludable</div>
+    <div class="gside">Rival</div>
+    <div class="gcell g-priv"><b>Private goods</b><span>jeans &middot; hamburgers &middot; contact lenses</span></div>
+    <div class="gcell g-comm"><b>Common resources</b><span>tuna in the ocean &middot; the environment &middot; public roads</span></div>
+    <div class="gside">Nonrival</div>
+    <div class="gcell g-club"><b>Club goods</b><span>cable TV &middot; Wi-Fi &middot; digital music</span></div>
+    <div class="gcell g-pub"><b>Public goods</b><span>asteroid deflection &middot; national defense &middot; mosquito control</span></div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="A spectrum">
+  <div class="eyebrow"><span>Defining goods</span><span class="q">A spectrum, not four boxes</span></div>
+  <h2 class="stitle">Excludability and rivalry are matters of degree</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-spec" role="img" aria-label="A map of goods with excludability running from easy to exclude on the left to hard to exclude on the right, and rivalry running from rival at the top to nonrival at the bottom; goods sit at many points in between, not only in the four corners."></svg>
+      </div>
+    </div>
+    <div class="col narrow">
+      <ul class="body" style="font-size:1.7cqi">
+        <li>The four boxes are a simplification. Real goods sit somewhere along two arrows.</li>
+        <li><strong>Excludability</strong> depends on how costly it is to keep non-payers out: a password, a fence, a toll booth.</li>
+        <li><strong>Rivalry</strong> depends on how crowded the good is: Wi-Fi is nonrival for a few users and rival when everyone streams at once.</li>
+        <li>A good can move along either arrow as technology or circumstances change.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: one road, four goods">
+  <div class="eyebrow"><span>Live example</span><span class="q">Change the toll and the traffic</span></div>
+  <h2 class="stitle">One road, four kinds of good</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-road" role="img" aria-label="The same road placed on the excludability and rivalry map; adding a toll moves it toward excludable, and more traffic moves it toward rival."></svg>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="btnrow" role="group" aria-label="Toll">
+          <button class="b" data-toll="0" aria-pressed="true">Free road</button>
+          <button class="b" data-toll="1" aria-pressed="false">Toll road</button>
+        </div>
+        <div class="ctrl">
+          <label for="s-traffic">Traffic</label>
+          <span class="val" id="s-traffic-val">Light</span>
+          <input type="range" id="s-traffic" min="0" max="100" step="5" value="10" aria-label="Amount of traffic">
+        </div>
+        <dl class="readout">
+          <dt>Excludable?</dt><dd id="r-rex">&mdash;</dd>
+          <dt>Rival?</dt><dd id="r-rri">&mdash;</dd>
+          <dt>Acts like a</dt><dd id="r-rty">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-road" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: sort a good">
+  <div class="eyebrow"><span>Live</span><span class="q">Pick a good</span></div>
+  <h2 class="stitle">Which type of good is it?</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="grid4 small" id="sorter">
+        <div></div><div class="ghead">Excludable</div><div class="ghead">Nonexcludable</div>
+        <div class="gside">Rival</div>
+        <div class="gcell g-priv" data-q="priv"><b>Private goods</b></div>
+        <div class="gcell g-comm" data-q="comm"><b>Common resources</b></div>
+        <div class="gside">Nonrival</div>
+        <div class="gcell g-club" data-q="club"><b>Club goods</b></div>
+        <div class="gcell g-pub" data-q="pub"><b>Public goods</b></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-good">Good</label>
+          <select id="s-good" class="sel" aria-label="Good to sort"></select>
+        </div>
+        <dl class="readout">
+          <dt>Excludable?</dt><dd id="r-ex">&mdash;</dd>
+          <dt>Rival?</dt><dd id="r-ri">&mdash;</dd>
+          <dt>Type</dt><dd id="r-ty">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-good" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part II">
+  <span class="num">PART TWO</span>
+  <h2>Private goods vs. public goods</h2>
+  <p>Why markets provide one well and underprovide the other.</p>
+</section>
+
+<section class="slide" data-label="Private vs public">
+  <div class="eyebrow"><span>Public goods</span><span class="q">Private vs. public</span></div>
+  <h2 class="stitle">Excluding non-payers is what gets goods produced</h2>
+  <div class="content">
+    <div class="col">
+      <div class="qcard"><span class="n">PRIVATE GOODS: EXCLUDABLE + RIVAL</span><h3>Markets provide them well</h3><p>Sellers can exclude non-payers, so there is an incentive to produce. The only people excluded are those unwilling or unable to pay the cost, and that isn&rsquo;t inefficient.</p></div>
+    </div>
+    <div class="col">
+      <div class="qcard"><span class="n">PUBLIC GOODS: NONEXCLUDABLE + NONRIVAL</span><h3>Markets underprovide them</h3><p>You can&rsquo;t easily charge users, so it is hard to get anyone to pay voluntarily.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Free and forced riders">
+  <div class="eyebrow"><span>Public goods</span><span class="q">Free riders and forced riders</span></div>
+  <h2 class="stitle">Free riders and forced riders</h2>
+  <div class="content">
+    <div class="col">
+      <div class="defs">
+        <div class="def"><dt>Free rider</dt><dd>Someone who enjoys a public good without paying a share of the cost.</dd></div>
+        <div class="def"><dt>Forced rider</dt><dd>Someone who pays for a public good (through taxes) but doesn&rsquo;t value it.</dd></div>
+      </div>
+    </div>
+    <div class="col">
+      <ul class="body" style="font-size:1.8cqi">
+        <li>Because public goods are nonexcludable, some people free ride, so the good is underprovided.</li>
+        <li>Taxing everyone to fund the good can make people better off, though it turns some into forced riders. In principle, government should provide the amount that maximizes total surplus.</li>
+        <li><strong>Which property matters more?</strong> Nonexcludability is usually the bigger problem. It is what breaks the incentive to pay.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: fireworks">
+  <div class="eyebrow"><span>Live example</span><span class="q">Ten neighbors and a fireworks show</span></div>
+  <h2 class="stitle">Voluntary contributions vs. a tax</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-fw" role="img" aria-label="Ten neighbors' values for a $100 fireworks show, showing who pays, who free rides, and whether the show happens."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--gain)"></i>Pays</span><span><i class="swatch" style="background:var(--crude)"></i>Free rider</span><span><i class="swatch" style="background:var(--loss)"></i>Forced rider</span><span>The show costs $100; neighbors&rsquo; values are illustrative</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="btnrow" role="group" aria-label="How the show is funded">
+          <button class="b" data-fw="vol" aria-pressed="true">Voluntary</button>
+          <button class="b" data-fw="tax" aria-pressed="false">Tax everyone $10</button>
+        </div>
+        <div class="ctrl" id="fw-slider">
+          <label for="s-fr">Free riders</label>
+          <span class="val" id="s-fr-val">2</span>
+          <input type="range" id="s-fr" min="0" max="9" step="1" value="2" aria-label="Number of free riders">
+        </div>
+        <dl class="readout">
+          <dt>Each payer&rsquo;s share</dt><dd id="r-sh">&mdash;</dd>
+          <dt>Show happens?</dt><dd id="r-show">&mdash;</dd>
+          <dt>Total surplus</dt><dd id="r-ts">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-fw" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part III">
+  <span class="num">PART THREE</span>
+  <h2>Club goods</h2>
+  <p>Excludable but nonrival.</p>
+</section>
+
+<section class="slide" data-label="Club goods">
+  <div class="eyebrow"><span>Club goods</span><span class="q">Excludable + nonrival</span></div>
+  <h2 class="stitle">Provided by markets, but inefficiently</h2>
+  <div class="content">
+    <div class="col">
+      <div class="def"><dt>Club good</dt><dd>A good that is excludable but nonrival, such as cable TV, streaming music or software. Also called a nonrival private good.</dd></div>
+      <ul class="body" style="font-size:1.8cqi">
+        <li>Markets can provide club goods, but some people who would pay the (near-zero) marginal cost, but not the market price, get excluded, even though letting them in costs almost nothing.</li>
+      </ul>
+    </div>
+    <div class="col narrow">
+      <div class="def"><dt>The peculiar case of advertising</dt><dd>Entrepreneurs find ways to profit from nonrival goods without charging users. Radio, TV and Google searches are free to users and paid for by advertisers. Wi-Fi may be sold, ad-funded, given away to attract customers, or supplied by local government.</dd></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: streaming price">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Drag the subscription price</span></div>
+  <h2 class="stitle">Who gets left out of a club good?</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-club" role="img" aria-label="Ten potential subscribers to a streaming service with different values; those who value it at least the price subscribe, and the rest are excluded even though serving them costs nothing."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--gain)"></i>Subscribes</span><span><i class="swatch" style="background:var(--loss)"></i>Excluded</span><span>Serving one more subscriber costs about $0; values are illustrative</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="ctrl">
+          <label for="s-club">Monthly price</label>
+          <span class="val" id="s-club-val">$10</span>
+          <input type="range" id="s-club" min="0" max="20" step="1" value="10" aria-label="Monthly subscription price">
+        </div>
+        <dl class="readout">
+          <dt>Subscribers</dt><dd id="r-subs">&mdash;</dd>
+          <dt>Revenue</dt><dd id="r-rev">&mdash;</dd>
+          <dt>Value lost to exclusion</dt><dd id="r-lost">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-club" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide divider" data-label="Part IV">
+  <span class="num">PART FOUR</span>
+  <h2>Common resources and the tragedy of the commons</h2>
+  <p>Nonexcludable but rival.</p>
+</section>
+
+<section class="slide" data-label="Tragedy of the commons">
+  <div class="eyebrow"><span>Common resources</span><span class="q">Nonexcludable + rival</span></div>
+  <h2 class="stitle">Unowned resources get overused</h2>
+  <div class="content">
+    <div class="col">
+      <div class="defs">
+        <div class="def"><dt>Common resource</dt><dd>A good that is nonexcludable but rival: ocean tuna, the environment, public roads.</dd></div>
+        <div class="def"><dt>Tragedy of the commons</dt><dd>The tendency of any unowned (and so nonexcludable) resource to be overused and undermaintained.</dd></div>
+      </div>
+    </div>
+    <div class="col">
+      <ul class="body" style="font-size:1.8cqi">
+        <li>Until they are caught, tuna are unowned. No one can be excluded, yet they are rival: your catch means less for me. That is not a public good.</li>
+        <li>Without ownership there is little incentive to conserve or maintain, because the benefits of restraint go mostly to others.</li>
+        <li>Since 1960, the tuna catch has fallen by about <strong>75%</strong>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Live: a fishery">
+  <div class="eyebrow"><span>Live diagram</span><span class="q">Choose how many boats</span></div>
+  <h2 class="stitle">Thirty years in an open-access fishery</h2>
+  <div class="content">
+    <div class="col wide">
+      <div class="fig">
+        <svg id="fig-fish" role="img" aria-label="Fish stock and yearly catch over 30 years; with many boats under open access the stock and catch collapse, while a total-catch limit keeps both steady."></svg>
+        <div class="legend"><span><i class="swatch" style="background:var(--brine)"></i>Fish stock</span><span><i class="swatch" style="background:var(--crude)"></i>Catch per year</span><span>Illustrative model</span></div>
+      </div>
+    </div>
+    <div class="col narrow">
+      <div class="panel">
+        <div class="btnrow" role="group" aria-label="Fishery rules">
+          <button class="b" data-fish="open" aria-pressed="true">Open access</button>
+          <button class="b" data-fish="itq" aria-pressed="false">ITQs</button>
+        </div>
+        <div class="ctrl" id="fish-slider">
+          <label for="s-boats">Boats fishing</label>
+          <span class="val" id="s-boats-val">6</span>
+          <input type="range" id="s-boats" min="1" max="10" step="1" value="6" aria-label="Number of boats">
+        </div>
+        <dl class="readout">
+          <dt>Catch, year 1</dt><dd id="r-c1">&mdash;</dd>
+          <dt>Catch, year 30</dt><dd id="r-c30">&mdash;</dd>
+          <dt>Total over 30 years</dt><dd id="r-ctot">&mdash;</dd>
+        </dl>
+      </div>
+      <div class="verdict" id="v-fish" data-tone="flat">&mdash;</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-label="Solutions">
+  <div class="eyebrow"><span>Common resources</span><span class="q">Solutions</span></div>
+  <h2 class="stitle">Solutions to the tragedy of the commons</h2>
+  <div class="qcards">
+    <div class="qcard"><span class="n">COMMUNITY NORMS</span><h3>Elinor Ostrom (Nobel 2009)</h3><p>Groups around the world have avoided overfishing and overgrazing by enforcing shared norms. This gets harder as more unrelated users gain access.</p></div>
+    <div class="qcard"><span class="n">COMMAND AND CONTROL</span><h3>Can backfire</h3><p>In 1968 British Columbia capped the number of fishing boats. Fishermen responded with &ldquo;capital stuffing&rdquo; (bigger engines, better electronics). Boat values tripled while the salmon fishery kept declining.</p></div>
+    <div class="qcard"><span class="n">PROPERTY RIGHTS (ITQs)</span><h3>New Zealand, 1986</h3><p>Individual transferable quotas: each is a right to a set tonnage, the quotas sum to the total allowable catch, and they can be traded. It worked, and the fish catch rose.</p></div>
+  </div>
+</section>
+
+<section class="slide" data-label="Self-check">
+  <div class="eyebrow"><span>Quiz self-check</span><span class="q">Be able to answer</span></div>
+  <h2 class="stitle">Questions to answer without notes</h2>
+  <div class="qcards qgrid6">
+    <div class="qcard"><span class="n">QUESTION 1</span><h3>What type of good is a fireworks display?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>A <strong>public good</strong>: nonrival (your watching doesn&rsquo;t dim mine) and nonexcludable (it&rsquo;s hard to stop non-payers from looking up).</p></div>
+    <div class="qcard"><span class="n">QUESTION 2</span><h3>What do you call someone who enjoys a public good without paying?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>A <strong>free rider</strong>.</p></div>
+    <div class="qcard"><span class="n">QUESTION 3</span><h3>For public goods, which property is usually the bigger problem?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden><strong>Nonexcludability.</strong> It breaks the incentive to pay.</p></div>
+    <div class="qcard"><span class="n">QUESTION 4</span><h3>Why are club goods provided inefficiently?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>Some people who would pay the near-zero marginal cost, but not the price, are <strong>excluded</strong>.</p></div>
+    <div class="qcard"><span class="n">QUESTION 5</span><h3>What is the tendency for common resources to be overused and undermaintained?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden>The <strong>tragedy of the commons</strong>.</p></div>
+    <div class="qcard"><span class="n">QUESTION 6</span><h3>What fixed New Zealand&rsquo;s fisheries?</h3><button class="b reveal" type="button" aria-expanded="false">Show answer</button><p class="ans" hidden><strong>ITQs</strong>: individual transferable quotas, tradable rights to a set tonnage of catch.</p></div>
+  </div>
+</section>
+
+<section class="slide" data-label="Takeaway">
+  <div class="eyebrow"><span>Takeaway</span></div>
+  <h2 class="stitle">Summary</h2>
+  <div class="takes">
+    <div class="take"><h3>Four types</h3><p>Two properties, <em>excludable</em> and <em>rival</em>, sort goods into private goods, club goods, common resources and public goods.</p></div>
+    <div class="take"><h3>Public goods</h3><p>Valuable but undersupplied by markets. Nonexcludability is the bigger problem, and it is the main argument for government taxation and supply.</p></div>
+    <div class="take"><h3>The commons</h3><p>Common resources tend to be <em>overused and undermaintained</em>: the tragedy of the commons.</p></div>
+    <div class="take"><h3>Fixes</h3><p>Enforced norms or new property rights (ITQs) can prevent the tragedy where blunt limits fail.</p></div>
+  </div>
+</section>
+
+<section class="slide" data-pad="tight" data-label="Key terms">
+  <div class="eyebrow"><span>Reference</span><span class="q">Key terms</span></div>
+  <h2 class="stitle">Key terms</h2>
+  <div class="terms">
+    <div class="term"><b>Excludable / rival</b><span>Can non-payers be kept out? / Does one person&rsquo;s use reduce another&rsquo;s?</span></div>
+    <div class="term"><b>Private good</b><span>Excludable + rival (jeans). Markets provide it well.</span></div>
+    <div class="term"><b>Public good</b><span>Nonexcludable + nonrival (national defense). Markets underprovide it.</span></div>
+    <div class="term"><b>Club good</b><span>Excludable + nonrival (streaming). Provided, but inefficiently.</span></div>
+    <div class="term"><b>Common resource</b><span>Nonexcludable + rival (ocean tuna). Prone to overuse.</span></div>
+    <div class="term"><b>Free / forced rider</b><span>Enjoys without paying / pays without valuing.</span></div>
+    <div class="term"><b>Tragedy of the commons</b><span>Unowned resources get overused and undermaintained.</span></div>
+    <div class="term"><b>ITQs</b><span>Individual transferable quotas: tradable catch rights that fixed New Zealand&rsquo;s fisheries.</span></div>
+  </div>
+</section>
+
+    </div>
+  </div>
+  <nav class="nav" aria-label="Slide navigation">
+    <button class="navbtn" id="prev" aria-label="Previous slide">&#8249;</button>
+    <button class="navbtn" id="next" aria-label="Next slide">&#8250;</button>
+    <div class="rail" id="rail" role="tablist" aria-label="Slides"></div>
+    <span class="counter" id="counter">1 / 1</span>
+    <span class="hint">&#8592; &#8594; to move &#183; drag any slider</span>
+  </nav>
+</div>
+
+<script>
+(function(){
+"use strict";
+var NS="http://www.w3.org/2000/svg";
+function E(n,a,t){var e=document.createElementNS(NS,n);for(var k in a){if(a[k]!==null&&a[k]!==undefined)e.setAttribute(k,a[k]);}if(t!==undefined)e.textContent=t;return e;}
+function C(n){return "var("+n+")";}
+function money(v,d){return "$"+Number(v).toFixed(d===undefined?2:d);}
+var MINUS="\u2212";
+function signed(v,d){return v<0?MINUS+money(-v,d):money(v,d);}
+
+function Frame(svg,o){
+  var W=o.W||440,H=o.H||300,L=(o.L===undefined?50:o.L),R=(o.R===undefined?16:o.R),T=(o.T===undefined?16:o.T),B=(o.B===undefined?40:o.B);
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  var x0=o.x0||0,x1=o.x1,y0=(o.y0===undefined?0:o.y0),y1=o.y1;
+  var f={svg:svg,W:W,H:H,x0:x0,x1:x1,y0:y0,y1:y1,
+    x:function(v){return L+(v-x0)/(x1-x0)*(W-L-R);},
+    y:function(v){return H-B-(v-y0)/(y1-y0)*(H-T-B);},
+    add:function(e){svg.appendChild(e);return e;}};
+  f.left=L; f.right=W-R; f.top=T; f.bottom=H-B;
+  f.add(E("path",{d:"M"+L+" "+T+" L"+L+" "+(H-B)+" L"+(W-R)+" "+(H-B),fill:"none",stroke:C("--rule"),"stroke-width":1.2}));
+  if(o.xlabel)f.add(E("text",{x:(L+W-R)/2,y:H-6,fill:C("--ink-faint"),"font-size":11,"text-anchor":"middle","font-family":"'Source Sans 3',sans-serif"},o.xlabel));
+  if(o.ylabel)f.add(E("text",{x:-(T+H-B)/2,y:13,fill:C("--ink-faint"),"font-size":11,"text-anchor":"middle",transform:"rotate(-90)","font-family":"'Source Sans 3',sans-serif"},o.ylabel));
+  return f;
+}
+function line(f,ax,ay,bx,by,stroke,w,dash){return f.add(E("line",{x1:f.x(ax),y1:f.y(ay),x2:f.x(bx),y2:f.y(by),stroke:stroke,"stroke-width":w||2,"stroke-dasharray":dash||null,"stroke-linecap":"round"}));}
+function curve(f,fn,a,b,stroke,w,dash){
+  var d="",i,q,v;
+  for(i=0;i<=140;i++){q=a+(b-a)*i/140; v=fn(q); if(!isFinite(v)||v>f.y1||v<f.y0){d="";continue;} d+=(d===""?"M":"L")+f.x(q).toFixed(2)+" "+f.y(v).toFixed(2);}
+  return f.add(E("path",{d:d,fill:"none",stroke:stroke,"stroke-width":w||2,"stroke-linejoin":"round","stroke-dasharray":dash||null}));
+}
+function lab(f,px,py,txt,fill,size,anchor){return f.add(E("text",{x:px,y:py,fill:fill,"font-size":size||11,"text-anchor":anchor||"start","font-weight":600,"font-family":"'IBM Plex Mono',monospace"},txt));}
+function cross(f,qx,py){
+  f.add(E("path",{d:"M"+f.x(qx)+" "+f.bottom+" L"+f.x(qx)+" "+f.y(py),stroke:C("--crude"),"stroke-width":1.1,"stroke-dasharray":"3 3",fill:"none"}));
+  f.add(E("path",{d:"M"+f.left+" "+f.y(py)+" L"+f.x(qx)+" "+f.y(py),stroke:C("--crude"),"stroke-width":1.1,"stroke-dasharray":"3 3",fill:"none"}));
+  f.add(E("circle",{cx:f.x(qx),cy:f.y(py),r:3.6,fill:C("--crude")}));
+}
+function xticks(f,v,fmt){v.forEach(function(t){
+  f.add(E("line",{x1:f.x(t),x2:f.x(t),y1:f.bottom,y2:f.bottom+4,stroke:C("--rule"),"stroke-width":1}));
+  f.add(E("text",{x:f.x(t),y:f.bottom+15,fill:C("--ink-faint"),"font-size":10,"text-anchor":"middle","font-family":"'IBM Plex Mono',monospace"},fmt?fmt(t):String(t)));});}
+function yticks(f,v,fmt){v.forEach(function(t){
+  f.add(E("line",{x1:f.left-4,x2:f.left,y1:f.y(t),y2:f.y(t),stroke:C("--rule"),"stroke-width":1}));
+  f.add(E("text",{x:f.left-7,y:f.y(t)+3.4,fill:C("--ink-faint"),"font-size":10,"text-anchor":"end","font-family":"'IBM Plex Mono',monospace"},fmt?fmt(t):String(t)));});}
+function hatchDefs(f){
+  var d=E("defs"),p=E("pattern",{id:"dwlhatch",width:6,height:6,patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"});
+  p.appendChild(E("rect",{width:6,height:6,fill:C("--loss-fill")}));
+  p.appendChild(E("line",{x1:0,y1:0,x2:0,y2:6,stroke:C("--loss"),"stroke-width":1.6,opacity:.75}));
+  d.appendChild(p); f.add(d);
+}
+function V(id,tone,html){var e=document.getElementById(id); if(!e)return; e.dataset.tone=tone; e.innerHTML=html;}
+
+
+function setPressed(el,on){el.setAttribute("aria-pressed",on?"true":"false");}
+
+/* ============ Live 1: sort a good ============ */
+var GOODS=[
+  ["Jeans",1,1,"The store won&rsquo;t hand you jeans unless you pay, and the pair you wear can&rsquo;t be worn by someone else."],
+  ["Hamburgers",1,1,"You have to pay to get one, and once you eat it, no one else can."],
+  ["Contact lenses",1,1,"Sold only to buyers, and each pair is used by one person."],
+  ["Tuna in the ocean",0,1,"No one can be kept from fishing the open ocean, but every tuna you catch is one fewer for others."],
+  ["The environment",0,1,"No one can be excluded from using clean air and water, but one person&rsquo;s pollution reduces what is left for others."],
+  ["Public roads",0,1,"Anyone can drive on them, but your car takes up space, so traffic slows everyone down."],
+  ["Cable TV",1,0,"Non-subscribers can be cut off, but your watching a channel doesn&rsquo;t stop anyone else from watching it."],
+  ["Wi-Fi",1,0,"A password keeps non-payers out, and up to a point many people can use the same network at once."],
+  ["Digital music",1,0,"Songs can be sold behind a paywall, but one person&rsquo;s download doesn&rsquo;t use up the song."],
+  ["Asteroid deflection",0,0,"Deflecting an asteroid protects everyone on Earth at once, and no one can be left unprotected."],
+  ["National defense",0,0,"Defending the country protects everyone in it, payers or not, and protecting one more person costs nothing extra."],
+  ["Mosquito control",0,0,"Spraying a town protects everyone who lives there, and your protection doesn&rsquo;t reduce mine."],
+  ["Fireworks display",0,0,"It&rsquo;s hard to stop non-payers from looking up, and your watching doesn&rsquo;t dim mine."]
+];
+var TYPE={"11":["priv","Private good"],"01":["comm","Common resource"],"10":["club","Club good"],"00":["pub","Public good"]};
+function sortGood(i){
+  var g=GOODS[i], t=TYPE[""+g[1]+g[2]];
+  Array.prototype.forEach.call(document.querySelectorAll("#sorter .gcell"),function(c){c.classList.toggle("on",c.dataset.q===t[0]);c.classList.toggle("off",c.dataset.q!==t[0]);});
+  document.getElementById("r-ex").textContent=g[1]?"Yes":"No";
+  document.getElementById("r-ri").textContent=g[2]?"Yes":"No";
+  document.getElementById("r-ty").textContent=t[1];
+  V("v-good","flat","<strong>"+g[0]+": "+(g[1]?"excludable":"nonexcludable")+" and "+(g[2]?"rival":"nonrival")+".</strong> "+g[3]);
+}
+
+/* ============ Live 2: fireworks ============ */
+var VAL=[16,16,16,16,16,16,16,16,16,0], fwMode="vol";
+function drawFW(k){
+  var svg=document.getElementById("fig-fw"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,x0:0.4,x1:10.6,y1:22,xlabel:"Neighbors",ylabel:"Value of the show ($)"});
+  yticks(f,[5,10,15,20],function(v){return "$"+v;});
+  var tax=fwMode==="tax", payers=tax?10:9-k, share=tax?10:100/payers, show=tax||share<=16;
+  VAL.forEach(function(v,i){
+    var role;
+    if(tax)role=v>0?"pay":"forced"; else role=i===9?"none":(i<payers?"pay":"free");
+    var col=role==="pay"?C("--gain"):role==="free"?C("--crude"):role==="forced"?C("--loss"):C("--rule");
+    var fill=role==="pay"?C("--gain-fill"):role==="free"?C("--crude-soft"):role==="forced"?C("--loss-fill"):C("--surface-2");
+    var w=f.x(1.35)-f.x(0.65), h=Math.max(v,0.6);
+    f.add(E("rect",{x:f.x(i+1)-w/2,y:f.y(h),width:w,height:f.y(0)-f.y(h),fill:fill,stroke:col,"stroke-width":1.4}));
+    var tag=role==="pay"?(show?"pays":"asked"):role==="free"?"free":role==="forced"?"forced":"";
+    lab(f,f.x(i+1),v>2?f.y(h)+14:f.y(h)-6,"$"+v,col,10,"middle");
+    if(tag)f.add(E("text",{x:f.x(i+1),y:f.bottom+15,fill:col,"font-size":10,"text-anchor":"middle","font-weight":600,"font-family":"'Source Sans 3',sans-serif"},tag));
+  });
+  f.add(E("line",{x1:f.left,x2:f.right,y1:f.y(Math.min(share,21.5)),y2:f.y(Math.min(share,21.5)),stroke:show?C("--ink-soft"):C("--loss"),"stroke-width":1.8,"stroke-dasharray":"5 4"}));
+  lab(f,f.right,f.top+2,"--- each payer's share: $"+share.toFixed(2),show?C("--ink-soft"):C("--loss"),10.5,"end");
+  document.getElementById("r-sh").textContent="$"+share.toFixed(2)+" × "+payers;
+  document.getElementById("r-show").textContent=show?"Yes":"No";
+  document.getElementById("r-ts").textContent=show?"$44":"$0";
+  if(tax)V("v-fw","gain","<strong>Tax: everyone pays $10.</strong> The show happens, and total surplus is $144 &minus; $100 = $44. Nine neighbors each gain $6. The tenth values the show at $0, so he is a <strong>forced rider</strong> and loses $10.");
+  else if(show)V("v-fw","gain","<strong>The show happens.</strong> "+payers+" neighbors split the $100 cost ($"+share.toFixed(2)+" each, less than their $16 value)"+(k?", while "+k+" free ride and enjoy it for nothing.":".")+" Total surplus is $44.");
+  else V("v-fw","loss","<strong>No show.</strong> With "+k+" free riders, the "+payers+" remaining neighbors would each have to pay $"+share.toFixed(2)+", more than their $16 value. The show isn&rsquo;t provided, even though it is worth $144 to the neighborhood and costs only $100.");
+  Array.prototype.forEach.call(document.querySelectorAll("[data-fw]"),function(b){setPressed(b,b.dataset.fw===fwMode);});
+  document.getElementById("fw-slider").style.visibility=tax?"hidden":"visible";
+}
+
+/* ============ Live 3: club good pricing ============ */
+var CV=[20,16,14,12,10,8,6,4,3,2];
+function drawClub(p){
+  var svg=document.getElementById("fig-club"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,x0:0.4,x1:10.6,y1:23,xlabel:"Potential subscribers, from highest to lowest value",ylabel:"Value per month ($)"});
+  yticks(f,[5,10,15,20],function(v){return "$"+v;});
+  var subs=0, lost=0;
+  CV.forEach(function(v,i){
+    var on=v>=p; if(on)subs++; else lost+=v;
+    var w=f.x(1.35)-f.x(0.65);
+    f.add(E("rect",{x:f.x(i+1)-w/2,y:f.y(v),width:w,height:f.y(0)-f.y(v),fill:on?C("--gain-fill"):C("--loss-fill"),stroke:on?C("--gain"):C("--loss"),"stroke-width":1.4,"stroke-dasharray":on?null:"4 3"}));
+    lab(f,f.x(i+1),f.y(v)-6,"$"+v,on?C("--gain"):C("--loss"),10,"middle");
+  });
+  f.add(E("line",{x1:f.left,x2:f.right,y1:f.y(p),y2:f.y(p),stroke:C("--crude"),"stroke-width":2.2}));
+  lab(f,f.right,f.top+2,"— price $"+p,C("--crude"),11,"end");
+  document.getElementById("r-subs").textContent=subs+" of 10";
+  document.getElementById("r-rev").textContent="$"+(p*subs);
+  document.getElementById("r-lost").textContent="$"+lost;
+  if(p===0)V("v-club","gain","<strong>Price = marginal cost = $0.</strong> Everyone who values the service gets it. Nothing is lost to exclusion, but the service earns no revenue to pay for itself.");
+  else if(lost===0)V("v-club","flat","<strong>Everyone subscribes at $"+p+".</strong> No one is excluded, and revenue is $"+p*subs+".");
+  else V("v-club","loss","<strong>"+(10-subs)+" people are excluded.</strong> They value the service at $"+lost+" in total, and serving them would cost about nothing, but they won&rsquo;t pay $"+p+". Revenue is $"+(p*subs)+".");
+}
+
+/* ============ Live 4: fishery ============ */
+var fishMode="open";
+function simulate(n){
+  var S=1000, r=0.4, K=1000, st=[], ca=[];
+  for(var t=0;t<30;t++){
+    var c=fishMode==="itq"?0.2*S:Math.min(0.1*n*S,S);
+    st.push(S); ca.push(c);
+    S=Math.max(0,S+r*S*(1-S/K)-c);
+  }
+  return {st:st,ca:ca};
+}
+function drawFish(n){
+  var svg=document.getElementById("fig-fish"); if(!svg)return;
+  var f=Frame(svg,{W:520,H:300,L:62,x0:1,x1:30,y1:1100,xlabel:"Year",ylabel:"Tons of fish"});
+  yticks(f,[250,500,750,1000],function(v){return v.toLocaleString();}); xticks(f,[1,10,20,30]);
+  var s=simulate(n), ds="", dc="";
+  s.st.forEach(function(v,i){ds+=(i?"L":"M")+f.x(i+1).toFixed(1)+" "+f.y(v).toFixed(1);});
+  s.ca.forEach(function(v,i){dc+=(i?"L":"M")+f.x(i+1).toFixed(1)+" "+f.y(Math.min(v,1100)).toFixed(1);});
+  f.add(E("path",{d:ds,fill:"none",stroke:C("--brine"),"stroke-width":2.4}));
+  f.add(E("path",{d:dc,fill:"none",stroke:C("--crude"),"stroke-width":2.4}));
+  var close=Math.abs(s.st[29]-s.ca[29])<120;
+  lab(f,f.x(30),f.y(s.st[29])-(close?22:8),"stock",C("--brine"),10.5,"end");
+  lab(f,f.x(30),f.y(s.ca[29])-8,"catch",C("--crude"),10.5,"end");
+  var tot=s.ca.reduce(function(a,b){return a+b;},0);
+  document.getElementById("r-c1").textContent=Math.round(s.ca[0])+" tons";
+  document.getElementById("r-c30").textContent=Math.round(s.ca[29])+" tons";
+  document.getElementById("r-ctot").textContent=Math.round(tot).toLocaleString()+" tons";
+  if(fishMode==="itq")V("v-fish","gain","<strong>ITQs: total catch limited to what the stock can sustain.</strong> However many boats there are, the quotas add up to the allowable catch, and owners gain from keeping the stock healthy. The stock settles at 500 tons and the catch holds at 100 tons a year.");
+  else if(n<=2)V("v-fish","flat","<strong>"+n+" boat"+(n>1?"s":"")+".</strong> With few users, the fish can regrow as fast as they&rsquo;re caught, and the catch levels off. The trouble starts when more boats can join.");
+  else if(n===3)V("v-fish","loss","<strong>3 boats.</strong> The stock shrinks year after year, and so does the catch. Each boat ignores how its catch lowers everyone else&rsquo;s.");
+  else V("v-fish","loss","<strong>"+n+" boats: the tragedy of the commons.</strong> A big catch in year 1 ("+Math.round(s.ca[0])+" tons), then the stock collapses and the catch falls to "+Math.round(s.ca[29])+" tons. No one owns the fish, so no one gains from holding back.");
+  Array.prototype.forEach.call(document.querySelectorAll("[data-fish]"),function(b){setPressed(b,b.dataset.fish===fishMode);});
+  document.getElementById("fish-slider").style.visibility=fishMode==="itq"?"hidden":"visible";
+}
+
+
+/* ============ spectrum map (x: 0 excludable -> 1 nonexcludable; y: 0 rival (top) -> 1 nonrival (bottom)) ============ */
+function specFrame(svg){
+  var W=520,H=320,L=86,R=18,T=30,B=46;
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  var f={svg:svg,add:function(e){svg.appendChild(e);return e;},
+    X:function(v){return L+v*(W-L-R);},Y:function(v){return T+v*(H-T-B);},L:L,R:W-R,T:T,B:H-B};
+  var mx=f.X(.5), my=f.Y(.5);
+  [[0,0,"priv"],[.5,0,"comm"],[0,.5,"club"],[.5,.5,"pub"]].forEach(function(q){
+    f.add(E("rect",{x:f.X(q[0]),y:f.Y(q[1]),width:f.X(.5)-f.X(0),height:f.Y(.5)-f.Y(0),fill:"var(--surface-2)",opacity:q[2]==="priv"||q[2]==="pub"?.55:.25}));
+  });
+  var corner=[["Private goods",0.02,0.04,"start"],["Common resources",0.98,0.04,"end"],["Club goods",0.02,0.985,"start"],["Public goods",0.98,0.985,"end"]];
+  corner.forEach(function(c){f.add(E("text",{x:f.X(c[1]),y:f.Y(c[2])+(c[2]<.5?10:-2),fill:C("--ink-faint"),"font-size":11,"text-anchor":c[3],"font-style":"italic","font-family":"Spectral,Georgia,serif"},c[0]));});
+  var d=E("defs"),m=E("marker",{id:"ah-"+svg.id,viewBox:"0 0 10 10",refX:8,refY:5,markerWidth:7,markerHeight:7,orient:"auto-start-reverse"});
+  m.appendChild(E("path",{d:"M0 0 L10 5 L0 10 Z",fill:C("--ink-soft")})); d.appendChild(m); f.add(d);
+  var ar="url(#ah-"+svg.id+")";
+  f.add(E("line",{x1:f.L,x2:f.R,y1:H-20,y2:H-20,stroke:C("--ink-soft"),"stroke-width":1.6,"marker-start":ar,"marker-end":ar}));
+  f.add(E("text",{x:f.L,y:H-6,fill:C("--ink-soft"),"font-size":11,"font-weight":600,"font-family":"'Source Sans 3',sans-serif"},"Easy to exclude"));
+  f.add(E("text",{x:f.R,y:H-6,fill:C("--ink-soft"),"font-size":11,"font-weight":600,"text-anchor":"end","font-family":"'Source Sans 3',sans-serif"},"Hard to exclude"));
+  f.add(E("text",{x:(f.L+f.R)/2,y:H-25,fill:C("--ink-faint"),"font-size":10,"text-anchor":"middle","letter-spacing":".12em","font-family":"'Source Sans 3',sans-serif"},"EXCLUDABILITY"));
+  f.add(E("line",{x1:22,x2:22,y1:f.T,y2:f.B,stroke:C("--ink-soft"),"stroke-width":1.6,"marker-start":ar,"marker-end":ar}));
+  f.add(E("text",{x:-(f.T+f.B)/2,y:14,fill:C("--ink-faint"),"font-size":10,"text-anchor":"middle",transform:"rotate(-90)","letter-spacing":".12em","font-family":"'Source Sans 3',sans-serif"},"RIVALRY"));
+  f.add(E("text",{x:30,y:f.T+4,fill:C("--ink-soft"),"font-size":11,"font-weight":600,"font-family":"'Source Sans 3',sans-serif"},"Rival"));
+  f.add(E("text",{x:30,y:f.B,fill:C("--ink-soft"),"font-size":11,"font-weight":600,"font-family":"'Source Sans 3',sans-serif"},"Nonrival"));
+  f.add(E("line",{x1:mx,x2:mx,y1:f.T,y2:f.B,stroke:C("--rule"),"stroke-width":1,"stroke-dasharray":"4 4"}));
+  f.add(E("line",{x1:f.L,x2:f.R,y1:my,y2:my,stroke:C("--rule"),"stroke-width":1,"stroke-dasharray":"4 4"}));
+  return f;
+}
+var SPEC=[["Hamburger",.06,.12,"start"],["Jeans",.13,.2,"start"],["Movie seat",.12,.42,"start"],["Wi-Fi",.3,.62,"start"],["Cable TV",.16,.8,"start"],["Digital music",.24,.9,"start"],
+  ["Tuna",.92,.12,"end"],["Public road",.7,.4,"end"],["City park",.78,.62,"end"],["Fireworks",.84,.78,"end"],["National defense",.95,.92,"end"]];
+function drawSpec(){
+  var svg=document.getElementById("fig-spec"); if(!svg)return;
+  var f=specFrame(svg);
+  SPEC.forEach(function(g){
+    var x=f.X(g[1]), y=f.Y(g[2]);
+    f.add(E("circle",{cx:x,cy:y,r:5,fill:C("--crude")}));
+    f.add(E("text",{x:x+(g[3]==="start"?9:-9),y:y+4,fill:C("--ink"),"font-size":11.5,"text-anchor":g[3],"font-family":"'Source Sans 3',sans-serif","font-weight":600},g[0]));
+  });
+}
+
+/* ============ one road, four goods ============ */
+var tollOn=0;
+function drawRoad(tr){
+  var svg=document.getElementById("fig-road"); if(!svg)return;
+  var f=specFrame(svg);
+  var x=tollOn?0.18:0.82, y=0.92-0.84*(tr/100);
+  var others=[[0.18,0.08],[0.82,0.08],[0.18,0.92],[0.82,0.92]];
+  others.forEach(function(o){f.add(E("circle",{cx:f.X(o[0]),cy:f.Y(o[1]),r:4,fill:"none",stroke:C("--rule"),"stroke-width":1.4,"stroke-dasharray":"2 2"}));});
+  f.add(E("line",{x1:f.X(x),x2:f.X(x),y1:f.Y(0.92),y2:f.Y(0.08),stroke:C("--crude-soft"),"stroke-width":6,"stroke-linecap":"round"}));
+  f.add(E("circle",{cx:f.X(x),cy:f.Y(y),r:9,fill:C("--crude"),stroke:C("--stage"),"stroke-width":2}));
+  f.add(E("text",{x:f.X(x)+(tollOn?16:-16),y:f.Y(y)+4,fill:C("--ink"),"font-size":12,"font-weight":700,"text-anchor":tollOn?"start":"end","font-family":"'Source Sans 3',sans-serif"},tollOn?"Toll road":"Free road"));
+  var rival=tr>=50, lvl=tr<25?"Light":tr<50?"Moderate":tr<75?"Heavy":"Gridlock";
+  document.getElementById("s-traffic-val").textContent=lvl;
+  document.getElementById("r-rex").textContent=tollOn?"Yes, the toll":"No";
+  document.getElementById("r-rri").textContent=tr<25?"No":tr<50?"Barely":tr<75?"Yes":"Very";
+  var type=tollOn?(rival?"Private good":"Club good"):(rival?"Common resource":"Public good");
+  document.getElementById("r-rty").textContent=type;
+  var msg={
+    "Public good":"<strong>A free road with light traffic acts like a public good.</strong> Anyone can drive on it, and one more car doesn&rsquo;t slow anyone down. Think of a rural highway at 3 a.m.",
+    "Common resource":"<strong>A free road at rush hour acts like a common resource.</strong> No one can be kept off, but every extra car slows everyone else. The road is overused: a tragedy of the commons in traffic form.",
+    "Club good":"<strong>A toll road with light traffic acts like a club good.</strong> Non-payers are kept out, but drivers who pay don&rsquo;t get in each other&rsquo;s way. Some drivers who would value the empty road are excluded by the toll.",
+    "Private good":"<strong>A toll road at rush hour acts like a private good.</strong> The toll keeps non-payers out, and space on the road is rival. A toll that rises with traffic (congestion pricing) rations that space to the drivers who value it most."
+  }[type];
+  V("v-road",type==="Common resource"?"loss":"flat",msg);
+  Array.prototype.forEach.call(document.querySelectorAll("[data-toll]"),function(b){setPressed(b,+b.dataset.toll===tollOn);});
+}
+
+/* ---------------- wiring ---------------- */
+drawSpec();
+document.getElementById("s-traffic").addEventListener("input",function(e){drawRoad(+e.target.value);});
+Array.prototype.forEach.call(document.querySelectorAll("[data-toll]"),function(b){b.addEventListener("click",function(){tollOn=+b.dataset.toll;drawRoad(+document.getElementById("s-traffic").value);});});
+drawRoad(10);
+function on(id,fn){var e=document.getElementById(id); if(e)e.addEventListener("input",fn);}
+var gs=document.getElementById("s-good");
+GOODS.forEach(function(g,i){var o=document.createElement("option");o.value=i;o.textContent=g[0];gs.appendChild(o);});
+gs.addEventListener("change",function(){sortGood(+gs.value);}); gs.value=12; sortGood(12);
+on("s-fr",function(e){var v=+e.target.value;document.getElementById("s-fr-val").textContent=v;drawFW(v);});
+Array.prototype.forEach.call(document.querySelectorAll("[data-fw]"),function(b){b.addEventListener("click",function(){fwMode=b.dataset.fw;drawFW(+document.getElementById("s-fr").value);});});
+drawFW(2);
+on("s-club",function(e){var v=+e.target.value;document.getElementById("s-club-val").textContent="$"+v;drawClub(v);}); drawClub(10);
+on("s-boats",function(e){var v=+e.target.value;document.getElementById("s-boats-val").textContent=v;drawFish(v);});
+Array.prototype.forEach.call(document.querySelectorAll("[data-fish]"),function(b){b.addEventListener("click",function(){fishMode=b.dataset.fish;drawFish(+document.getElementById("s-boats").value);});});
+drawFish(6);
+Array.prototype.forEach.call(document.querySelectorAll("button.reveal"),function(btn){
+  btn.addEventListener("click",function(){
+    var ans=btn.nextElementSibling, open=ans.hidden;
+    ans.hidden=!open; btn.setAttribute("aria-expanded",open?"true":"false");
+    btn.textContent=open?"Hide answer":"Show answer";
+  });
+});
+Array.prototype.forEach.call(document.querySelectorAll('input[type=number], select, button.b'),function(el){
+  el.addEventListener("keydown",function(e){if(e.key===" "||e.key==="ArrowLeft"||e.key==="ArrowRight"||e.key==="Home"||e.key==="End")e.stopPropagation();});
+});
+
+var slides=Array.prototype.slice.call(document.querySelectorAll(".slide"));
+var rail=document.getElementById("rail"), counter=document.getElementById("counter"), cur=0;
+slides.forEach(function(s,i){
+  var b=document.createElement("button"); b.type="button"; b.setAttribute("role","tab");
+  b.setAttribute("aria-label","Slide "+(i+1)+": "+(s.dataset.label||"")); b.title=(i+1)+". "+(s.dataset.label||"");
+  b.addEventListener("click",function(){go(i);}); rail.appendChild(b);
+});
+function go(i){
+  cur=Math.max(0,Math.min(slides.length-1,i));
+  slides.forEach(function(s,j){s.classList.toggle("on",j===cur);});
+  Array.prototype.forEach.call(rail.children,function(b,j){b.setAttribute("aria-current",j===cur?"true":"false");});
+  counter.textContent=(cur+1)+" / "+slides.length;
+}
+document.getElementById("prev").addEventListener("click",function(){go(cur-1);});
+document.getElementById("next").addEventListener("click",function(){go(cur+1);});
+document.addEventListener("keydown",function(e){
+  var t=e.target.tagName;
+  if(t==="INPUT"&&e.target.type==="text")return;
+  if(t==="INPUT"&&e.target.type==="range"&&(e.key==="ArrowLeft"||e.key==="ArrowRight"))return;
+  if(e.key==="ArrowRight"||e.key==="PageDown"||e.key===" "){go(cur+1);e.preventDefault();}
+  else if(e.key==="ArrowLeft"||e.key==="PageUp"){go(cur-1);e.preventDefault();}
+  else if(e.key==="Home")go(0); else if(e.key==="End")go(slides.length-1);
+});
+go(0);
+})();
+</script>
+</body>
+</html>
